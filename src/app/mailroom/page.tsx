@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { Mail, Send, Loader2, Paperclip, X, Plus, FileText, Users, Save, Trash2, CheckCircle, AlertCircle, Clock, ChevronDown } from 'lucide-react'
 import { sendBatchEmail } from '@/app/actions/email'
 
+export const dynamic = 'force-dynamic'
+
 // --- TYPES ---
 type EmailGroup = {
   id: string

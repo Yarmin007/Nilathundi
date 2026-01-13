@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Loader2, DollarSign, Package, CheckCircle2, AlertCircle, FileText, Scale } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [orders, setOrders] = useState<any[]>([])

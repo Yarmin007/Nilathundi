@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation'
 import { Loader2, Download, ArrowLeft, Eye } from 'lucide-react'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default function InvoiceView() {
   const params = useParams()
   const id = params?.id as string

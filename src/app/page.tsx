@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { Loader2, DollarSign, Package, CheckCircle2, AlertCircle, FileText, Scale, Filter, Wallet } from 'lucide-react'
 import AlertDialog from '@/components/AlertDialog'
 
+export const dynamic = 'force-dynamic'
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [orders, setOrders] = useState<any[]>([])

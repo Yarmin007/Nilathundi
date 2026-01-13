@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { CheckCircle, Printer, Loader2, ArrowRight, X, Filter } from 'lucide-react'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default function InvoicesPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('pending')

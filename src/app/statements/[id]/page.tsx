@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { useParams, useRouter } from 'next/navigation'
 import { Loader2, ArrowLeft, Printer } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export default function StatementView() {
   const params = useParams()
   const router = useRouter()

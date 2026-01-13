@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { Save, Loader2, Trash2, Scale, Calendar, FileText, DollarSign, AlertTriangle, X, Pencil, Ban } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
+export const dynamic = 'force-dynamic'
+
 export default function NewEntry() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)

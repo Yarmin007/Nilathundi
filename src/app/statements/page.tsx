@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { FileText, Plus, Loader2, Eye, Trash2, X, AlertCircle, CheckSquare, Square, Filter } from 'lucide-react'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default function StatementsPage() {
   const [loading, setLoading] = useState(true)
   const [statements, setStatements] = useState<any[]>([])
