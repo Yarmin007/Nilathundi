@@ -168,99 +168,103 @@ export default function NewEntry() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto pb-20 pt-8 relative">
+    // MOBILE FIX: Added px-4 (padding sides)
+    <div className="max-w-3xl mx-auto pb-24 pt-6 px-4 relative">
       
-      <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
             {editingId ? 'Edit Entry' : 'New Entry'}
         </h1>
-        <p className="text-gray-500 font-medium mt-1">
-            {editingId ? 'Update the details below.' : 'Add a new Purchase Order to the system.'}
+        <p className="text-gray-500 text-sm md:text-base font-medium mt-1">
+            {editingId ? 'Update the details below.' : 'Add a new Purchase Order.'}
         </p>
       </div>
 
       {/* THE FORM CARD */}
-      <div className={`rounded-2xl border shadow-sm overflow-hidden p-8 mb-10 transition-colors ${editingId ? 'bg-blue-50/50 border-blue-200' : 'bg-white border-gray-200'}`}>
-        <form onSubmit={handleSubmit} className="space-y-8">
+      <div className={`rounded-2xl border shadow-sm overflow-hidden p-5 md:p-8 mb-10 transition-colors ${editingId ? 'bg-blue-50/50 border-blue-200' : 'bg-white border-gray-200'}`}>
+        <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
           
-          {/* Section 1: Dates */}
-          <div className="grid grid-cols-2 gap-6">
+          {/* Section 1: Dates (Stacks on mobile) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">PO Date</label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                <Calendar className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
                 <input 
                   type="date" 
                   required
                   value={formData.po_date}
                   onChange={(e) => setFormData({...formData, po_date: e.target.value})}
-                  className="w-full pl-10 bg-white border border-gray-200 text-gray-900 text-sm font-bold rounded-lg focus:ring-black focus:border-black block p-3 outline-none transition-all" 
+                  className="w-full pl-11 bg-white border border-gray-200 text-gray-900 text-base font-bold rounded-xl focus:ring-black focus:border-black block p-3 outline-none transition-all shadow-sm" 
                 />
               </div>
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Delivery Date</label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                <Calendar className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
                 <input 
                   type="date" 
                   required
                   value={formData.delivery_date}
                   onChange={(e) => setFormData({...formData, delivery_date: e.target.value})}
-                  className="w-full pl-10 bg-white border border-gray-200 text-gray-900 text-sm font-bold rounded-lg focus:ring-black focus:border-black block p-3 outline-none transition-all" 
+                  className="w-full pl-11 bg-white border border-gray-200 text-gray-900 text-base font-bold rounded-xl focus:ring-black focus:border-black block p-3 outline-none transition-all shadow-sm" 
                 />
               </div>
             </div>
           </div>
 
-          <hr className="border-gray-200/50" />
+          <hr className="border-gray-100" />
 
-          {/* Section 2: Order Details */}
-          <div className="grid grid-cols-2 gap-6">
+          {/* Section 2: Order Details (Stacks on mobile) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">PO Number</label>
               <div className="relative">
-                <FileText className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                <FileText className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
                 <input 
                   type="text" 
                   required
                   placeholder="e.g. 9928"
+                  inputMode="numeric"
                   value={formData.po_number}
                   onChange={(e) => setFormData({...formData, po_number: e.target.value})}
-                  className="w-full pl-10 bg-white border border-gray-200 text-gray-900 text-sm font-bold rounded-lg focus:ring-black focus:border-black block p-3 outline-none transition-all" 
+                  className="w-full pl-11 bg-white border border-gray-200 text-gray-900 text-base font-bold rounded-xl focus:ring-black focus:border-black block p-3 outline-none transition-all shadow-sm" 
                 />
               </div>
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Weight (Kg)</label>
               <div className="relative">
-                <Scale className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                <Scale className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
                 <input 
                   type="number" 
                   step="0.01" 
                   placeholder="0.00"
+                  inputMode="decimal"
                   value={formData.weight_kg}
                   onChange={(e) => setFormData({...formData, weight_kg: e.target.value})}
-                  className="w-full pl-10 bg-white border border-gray-200 text-gray-900 text-sm font-bold rounded-lg focus:ring-black focus:border-black block p-3 outline-none transition-all" 
+                  className="w-full pl-11 bg-white border border-gray-200 text-gray-900 text-base font-bold rounded-xl focus:ring-black focus:border-black block p-3 outline-none transition-all shadow-sm" 
                 />
               </div>
             </div>
           </div>
 
           {/* Section 3: Money & Calculations */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-6 shadow-sm">
+          <div className="bg-gray-50/50 p-4 md:p-6 rounded-xl border border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 shadow-inner">
             
             {/* Price Per Kg */}
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Price Per Kg</label>
               <div className="relative">
-                <span className="absolute left-3 top-3 text-gray-400 font-bold text-sm">MVR</span>
+                <span className="absolute left-3 top-3.5 text-gray-400 font-bold text-sm">MVR</span>
                 <input 
                   type="number" 
                   step="0.01"
+                  inputMode="decimal"
                   value={formData.unit_price}
                   onChange={(e) => setFormData({...formData, unit_price: e.target.value})}
-                  className="w-full pl-12 bg-gray-50 border border-gray-200 text-gray-900 text-sm font-bold rounded-lg focus:ring-black focus:border-black block p-3 outline-none transition-all" 
+                  className="w-full pl-12 bg-white border border-gray-200 text-gray-900 text-base font-bold rounded-xl focus:ring-black focus:border-black block p-3 outline-none transition-all" 
                 />
               </div>
             </div>
@@ -269,33 +273,33 @@ export default function NewEntry() {
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-green-600 uppercase tracking-wider mb-2">Total Amount (Auto)</label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-3 w-4 h-4 text-green-600" />
+                <DollarSign className="absolute left-3 top-3.5 w-5 h-5 text-green-600" />
                 <input 
                   type="number" 
                   required
                   step="0.01"
                   placeholder="0.00"
+                  readOnly
                   value={formData.total_amount}
-                  onChange={(e) => setFormData({...formData, total_amount: e.target.value})}
-                  className="w-full pl-10 bg-green-50/50 border-2 border-green-100 text-green-700 text-lg font-extrabold rounded-lg focus:ring-green-500 focus:border-green-500 block p-3 outline-none transition-all" 
+                  className="w-full pl-11 bg-green-50 border-2 border-green-200 text-green-700 text-xl font-extrabold rounded-xl focus:ring-green-500 focus:border-green-500 block p-3 outline-none transition-all" 
                 />
               </div>
             </div>
 
              {/* Currency Toggle */}
             <div className="md:col-span-3 flex justify-end">
-                <div className="flex bg-gray-50 rounded-lg border border-gray-200 p-1">
+                <div className="flex bg-white rounded-lg border border-gray-200 p-1 shadow-sm">
                     <button
                     type="button"
                     onClick={() => setFormData({...formData, currency: 'MVR'})}
-                    className={`px-4 py-1.5 text-xs font-bold rounded transition-all ${formData.currency === 'MVR' ? 'bg-black text-white shadow-sm' : 'text-gray-500 hover:text-black'}`}
+                    className={`px-5 py-2 text-xs font-bold rounded-md transition-all ${formData.currency === 'MVR' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:text-black'}`}
                     >
                     MVR
                     </button>
                     <button
                     type="button"
                     onClick={() => setFormData({...formData, currency: 'USD'})}
-                    className={`px-4 py-1.5 text-xs font-bold rounded transition-all ${formData.currency === 'USD' ? 'bg-black text-white shadow-sm' : 'text-gray-500 hover:text-black'}`}
+                    className={`px-5 py-2 text-xs font-bold rounded-md transition-all ${formData.currency === 'USD' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:text-black'}`}
                     >
                     USD
                     </button>
@@ -305,21 +309,21 @@ export default function NewEntry() {
           </div>
 
           {/* Submit & Cancel Buttons */}
-          <div className="flex gap-3">
+          <div className="flex flex-col md:flex-row gap-3 pt-2">
             {editingId && (
                 <button 
                     type="button" 
                     onClick={cancelEdit}
-                    className="flex-1 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 font-bold rounded-xl text-sm px-5 py-4 flex items-center justify-center gap-2 transition-all"
+                    className="w-full text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 font-bold rounded-xl text-base px-5 py-4 flex items-center justify-center gap-2 transition-all active:scale-95"
                 >
-                    <Ban className="w-5 h-5" /> Cancel Edit
+                    <Ban className="w-5 h-5" /> Cancel
                 </button>
             )}
             
             <button 
                 type="submit" 
                 disabled={loading}
-                className={`flex-[2] text-white font-bold rounded-xl text-sm px-5 py-4 text-center flex items-center justify-center gap-2 transition-all shadow-md ${editingId ? 'bg-blue-600 hover:bg-blue-700' : 'bg-black hover:bg-gray-800'}`}
+                className={`w-full text-white font-bold rounded-xl text-base px-5 py-4 text-center flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 ${editingId ? 'bg-blue-600 hover:bg-blue-700' : 'bg-black hover:bg-gray-800'}`}
             >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                 {editingId ? 'Update Entry' : 'Save Entry'}
@@ -333,33 +337,31 @@ export default function NewEntry() {
       <div className="border-t border-gray-200 pt-8">
         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Recently Added</h3>
         
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
           {recentOrders.length === 0 ? (
             <div className="p-6 text-center text-sm text-gray-400">No entries yet. Add one above!</div>
           ) : (
             recentOrders.map((order) => (
               <div key={order.id} className={`flex justify-between items-center p-4 border-b border-gray-100 last:border-0 transition-colors ${editingId === order.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : 'hover:bg-gray-50'}`}>
                 <div>
-                   <div className="font-bold text-gray-900 text-sm">PO #{order.po_number}</div>
-                   <div className="text-xs text-gray-500 font-medium mt-0.5">
-                      Del: {order.delivery_date || order.po_date} • {order.currency} {order.total_amount} • <span className="text-black font-bold">{order.weight_kg} kg</span>
+                   <div className="font-bold text-gray-900 text-base">PO #{order.po_number}</div>
+                   <div className="text-xs text-gray-500 font-medium mt-1">
+                      {order.delivery_date} • {order.currency} {order.total_amount} • <span className="text-black font-bold">{order.weight_kg} kg</span>
                    </div>
                 </div>
                 
                 <div className="flex gap-2">
                     <button 
                     onClick={() => handleEdit(order)}
-                    className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-all group"
-                    title="Edit Entry"
+                    className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-3 rounded-lg transition-all active:bg-blue-100"
                     >
-                        <Pencil className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                        <Pencil className="w-5 h-5" />
                     </button>
                     <button 
                     onClick={() => promptDelete(order.id)}
-                    className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all group"
-                    title="Delete Entry"
+                    className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-3 rounded-lg transition-all active:bg-red-100"
                     >
-                        <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                        <Trash2 className="w-5 h-5" />
                     </button>
                 </div>
               </div>
@@ -370,20 +372,20 @@ export default function NewEntry() {
 
       {/* --- CUSTOM DELETE MODAL --- */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 scale-100 animate-in zoom-in-95 duration-200">
             
             <div className="flex justify-between items-start mb-4">
               <div className="bg-red-50 p-3 rounded-full">
                  <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
-              <button onClick={() => setShowDeleteModal(false)} className="text-gray-400 hover:text-gray-600 p-1">
-                <X className="w-5 h-5"/>
+              <button onClick={() => setShowDeleteModal(false)} className="text-gray-400 hover:text-gray-600 p-2">
+                <X className="w-6 h-6"/>
               </button>
             </div>
 
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Entry?</h3>
-            <p className="text-sm text-gray-500 mb-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Entry?</h3>
+            <p className="text-sm text-gray-500 mb-8 leading-relaxed">
               Are you sure you want to delete this order? This action cannot be undone.
             </p>
 
@@ -391,16 +393,16 @@ export default function NewEntry() {
               <button 
                 onClick={() => setShowDeleteModal(false)}
                 disabled={deleteLoading}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-700 font-bold text-sm hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-3.5 rounded-xl border border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-50 active:bg-gray-100"
               >
                 Cancel
               </button>
               <button 
                 onClick={confirmDelete}
                 disabled={deleteLoading}
-                className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-colors flex justify-center items-center gap-2"
+                className="flex-1 px-4 py-3.5 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 active:bg-red-800 flex justify-center items-center gap-2 shadow-lg shadow-red-200"
               >
-                {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Delete Forever'}
+                {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Delete'}
               </button>
             </div>
 
