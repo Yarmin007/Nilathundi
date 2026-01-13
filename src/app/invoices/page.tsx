@@ -35,9 +35,7 @@ export default function InvoicesPage() {
       .not('po_date', 'is', null)
     
     if (data) {
-      // Get unique years from PO Dates
       const years = Array.from(new Set(data.map(item => new Date(item.po_date).getFullYear().toString())))
-      // Sort Newest -> Oldest for the dropdown
       setAvailableYears(years.sort().reverse())
     }
   }
@@ -46,7 +44,6 @@ export default function InvoicesPage() {
     setLoading(true)
     let query = supabase.from('orders').select('*')
 
-    // 1. FILTER BY YEAR
     if (selectedYear !== 'all') {
       const start = `${selectedYear}-01-01`
       const end = `${selectedYear}-12-31`
@@ -54,13 +51,11 @@ export default function InvoicesPage() {
     }
 
     if (activeTab === 'pending') {
-      // PENDING: Sort by Delivery Date (Oldest First) to catch old jobs
       query = query
         .eq('delivery_status', 'Delivered')
         .is('invoice_number', null)
         .order('delivery_date', { ascending: true })
     } else {
-      // HISTORY: Sort by Date (Newest First) so Invoice #40 is at the top
       query = query
         .not('invoice_number', 'is', null)
         .order('po_date', { ascending: false }) 
@@ -85,18 +80,13 @@ export default function InvoicesPage() {
 
     const { data: setting } = await supabase.from('settings').select('value').eq('key', 'next_invoice_number').single()
     const nextInv = setting?.value || 1
-
-    // ---------------------------------------------------------
-    // FIX: Use Delivery Date (or PO Date) instead of "Today"
-    // This ensures the Invoice Date always matches the Delivery Date.
-    // ---------------------------------------------------------
     const finalDate = selectedOrder.delivery_date || selectedOrder.po_date;
 
     const { error } = await supabase
       .from('orders')
       .update({ 
         invoice_number: nextInv,
-        invoice_date: finalDate // <--- Updated to use the historical date
+        invoice_date: finalDate 
       })
       .eq('id', selectedOrder.id)
 
@@ -116,26 +106,29 @@ export default function InvoicesPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto pb-20 pt-8 relative">
+    // MOBILE FIX: Added px-4
+    <div className="max-w-5xl mx-auto pb-24 pt-6 px-4 relative">
       
-      <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Invoices</h1>
-        <p className="text-gray-500 font-medium mt-1">Manage and generate your billing documents.</p>
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Invoices</h1>
+        <p className="text-sm md:text-base text-gray-500 font-medium mt-1">Manage and generate your billing documents.</p>
       </div>
 
-      {/* CONTROLS */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div className="flex gap-1 bg-gray-100/50 p-1 rounded-xl border border-gray-200">
-          <button onClick={() => setActiveTab('pending')} className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'pending' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:text-black'}`}>To Generate</button>
-          <button onClick={() => setActiveTab('history')} className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'history' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:text-black'}`}>History</button>
+      {/* CONTROLS: Stacked on Mobile */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        {/* Tabs */}
+        <div className="flex w-full md:w-auto gap-1 bg-gray-100/50 p-1 rounded-xl border border-gray-200">
+          <button onClick={() => setActiveTab('pending')} className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all ${activeTab === 'pending' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:text-black'}`}>To Generate</button>
+          <button onClick={() => setActiveTab('history')} className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all ${activeTab === 'history' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:text-black'}`}>History</button>
         </div>
 
-        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
+        {/* Filter */}
+        <div className="w-full md:w-auto flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-3 md:py-2 shadow-sm">
           <Filter className="w-4 h-4 text-gray-400" />
           <select 
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
-            className="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer"
+            className="w-full md:w-auto bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer"
           >
             <option value="all">All Years</option>
             {availableYears.map(year => (
@@ -145,7 +138,7 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      {/* TABLE */}
+      {/* TABLE: Scrollable on Mobile */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm min-h-[300px]">
         {loading ? (
           <div className="p-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-300"/></div>
@@ -154,84 +147,81 @@ export default function InvoicesPage() {
             {activeTab === 'pending' ? <p>All items invoiced!</p> : <p>No invoices found.</p>}
           </div>
         ) : (
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Details</th>
-                <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Qty</th>
-                <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                   {activeTab === 'history' ? 'Invoice #' : 'Delivery Note'}
-                </th>
-                <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {orders.map((order) => {
-                // --- YEAR LOGIC ---
-                // Extracts "23", "24", "25" from the PO Date or Delivery Date
-                const dateObj = new Date(order.po_date || order.delivery_date || new Date())
-                const yearShort = String(dateObj.getFullYear()).slice(-2)
+          <div className="overflow-x-auto">
+            <table className="w-full text-left whitespace-nowrap">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Details</th>
+                  <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Qty</th>
+                  <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    {activeTab === 'history' ? 'Invoice #' : 'Delivery Note'}
+                  </th>
+                  <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {orders.map((order) => {
+                  const dateObj = new Date(order.po_date || order.delivery_date || new Date())
+                  const yearShort = String(dateObj.getFullYear()).slice(-2)
 
-                return (
-                  <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-5 text-sm font-medium text-gray-500">
-                      {order.po_date || order.delivery_date}
-                    </td>
-                    <td className="p-5">
-                      <div className="font-bold text-gray-900">PO #{order.po_number}</div>
-                    </td>
-                    <td className="p-5 text-sm font-bold text-gray-900">
-                      {/* Displays the newly calculated weight from SQL */}
-                      {order.weight_kg}
-                    </td>
-                    <td className="p-5 text-sm font-bold text-gray-600">
-                      {order.currency} {order.total_amount?.toLocaleString()}
-                    </td>
-                    
-                    <td className="p-5">
-                      {activeTab === 'history' ? (
-                        <span className="font-mono text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded text-xs">
-                          {/* Format: 0001/25 */}
-                          #{String(order.invoice_number).padStart(4, '0')}/{yearShort}
-                        </span>
-                      ) : (
-                         <span className="font-mono text-green-600 font-bold bg-green-50 px-2 py-1 rounded text-xs">
-                          {/* Format: 0043/25 */}
-                          DN: {order.delivery_note ? String(order.delivery_note).padStart(2, '0') : '--'}/{yearShort}
-                        </span>
-                      )}
-                    </td>
+                  return (
+                    <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="p-5 text-sm font-medium text-gray-500">
+                        {order.po_date || order.delivery_date}
+                      </td>
+                      <td className="p-5">
+                        <div className="font-bold text-gray-900">PO #{order.po_number}</div>
+                      </td>
+                      <td className="p-5 text-sm font-bold text-gray-900">
+                        {order.weight_kg}
+                      </td>
+                      <td className="p-5 text-sm font-bold text-gray-600">
+                        {order.currency} {order.total_amount?.toLocaleString()}
+                      </td>
+                      
+                      <td className="p-5">
+                        {activeTab === 'history' ? (
+                          <span className="font-mono text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded text-xs">
+                            #{String(order.invoice_number).padStart(4, '0')}/{yearShort}
+                          </span>
+                        ) : (
+                          <span className="font-mono text-green-600 font-bold bg-green-50 px-2 py-1 rounded text-xs">
+                            DN: {order.delivery_note ? String(order.delivery_note).padStart(2, '0') : '--'}/{yearShort}
+                          </span>
+                        )}
+                      </td>
 
-                    <td className="p-5 text-right">
-                      {activeTab === 'pending' ? (
-                        <button onClick={() => promptGenerateInvoice(order)} className="bg-black hover:bg-gray-800 text-white text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-2 ml-auto transition-all">
-                          Generate <ArrowRight className="w-3 h-3"/>
-                        </button>
-                      ) : (
-                        <Link href={`/invoices/${order.id}`} className="text-gray-500 hover:text-black hover:bg-gray-100 p-2 rounded-lg inline-flex transition-all">
-                          <Printer className="w-5 h-5"/>
-                        </Link>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                      <td className="p-5 text-right">
+                        {activeTab === 'pending' ? (
+                          <button onClick={() => promptGenerateInvoice(order)} className="bg-black hover:bg-gray-800 text-white text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-2 ml-auto transition-all active:scale-95 shadow-md">
+                            Generate <ArrowRight className="w-3 h-3"/>
+                          </button>
+                        ) : (
+                          <Link href={`/invoices/${order.id}`} className="text-gray-500 hover:text-black hover:bg-gray-100 p-2.5 rounded-lg inline-flex transition-all active:bg-gray-200 border border-transparent hover:border-gray-200">
+                            <Printer className="w-5 h-5"/>
+                          </Link>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
       
-      {/* MODAL */}
+      {/* MOBILE FRIENDLY MODAL */}
       {showModal && selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 scale-100 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Generate Invoice?</h3>
-            <p className="text-sm text-gray-500 mb-6">For PO #{selectedOrder.po_number}</p>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Generate Invoice?</h3>
+            <p className="text-sm text-gray-500 mb-8">This will create a permanent invoice number for <b>PO #{selectedOrder.po_number}</b>.</p>
             <div className="flex gap-3">
-              <button onClick={closeModal} disabled={processing} className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-700 font-bold text-sm">Cancel</button>
-              <button onClick={confirmGeneration} disabled={processing} className="flex-1 px-4 py-3 rounded-xl bg-black text-white font-bold text-sm flex justify-center items-center gap-2">
+              <button onClick={closeModal} disabled={processing} className="flex-1 px-4 py-3.5 rounded-xl border border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-50 active:bg-gray-100">Cancel</button>
+              <button onClick={confirmGeneration} disabled={processing} className="flex-1 px-4 py-3.5 rounded-xl bg-black text-white font-bold text-sm flex justify-center items-center gap-2 active:scale-95 shadow-lg">
                 {processing ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Confirm'}
               </button>
             </div>
