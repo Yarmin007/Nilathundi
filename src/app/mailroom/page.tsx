@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 type EmailGroup = {
   id: string
   name: string
-  to: string[]  // Changed to Array for easier management
+  to: string[]
   cc: string[]
   bcc: string[]
 }
@@ -27,7 +27,7 @@ export default function MailroomPage() {
   const [contacts, setContacts] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   
-  // Email Fields (Input strings for the main form)
+  // Email Fields
   const [toInput, setToInput] = useState('')
   const [ccInput, setCcInput] = useState('')
   const [bccInput, setBccInput] = useState('')
@@ -43,13 +43,13 @@ export default function MailroomPage() {
   const [groups, setGroups] = useState<EmailGroup[]>([])
   const [showGroupModal, setShowGroupModal] = useState(false)
   
-  // Group Form State (Arrays for the Modal Chips)
+  // Group Form State
   const [groupFormName, setGroupFormName] = useState('')
   const [groupFormTo, setGroupFormTo] = useState<string[]>([])
   const [groupFormCc, setGroupFormCc] = useState<string[]>([])
   const [groupFormBcc, setGroupFormBcc] = useState<string[]>([])
   
-  // Temporary input state for the chips
+  // Temporary input state
   const [tempTo, setTempTo] = useState('')
   const [tempCc, setTempCc] = useState('')
   const [tempBcc, setTempBcc] = useState('')
@@ -61,7 +61,7 @@ export default function MailroomPage() {
   useEffect(() => { 
     fetchContacts()
     fetchHistory()
-    const saved = localStorage.getItem('email_groups_v3') // Version 3 for new format
+    const saved = localStorage.getItem('email_groups_v3')
     if (saved) setGroups(JSON.parse(saved))
   }, [])
 
@@ -82,7 +82,7 @@ export default function MailroomPage() {
     setTimeout(() => setToast(prev => ({ ...prev, show: false })), 4000)
   }
 
-  // --- CHIP LOGIC (For Modal) ---
+  // --- CHIP LOGIC ---
   const addChip = (e: React.KeyboardEvent, list: string[], setList: Function, val: string, setVal: Function) => {
       if (e.key === 'Enter' || e.key === ',') {
           e.preventDefault()
@@ -99,11 +99,8 @@ export default function MailroomPage() {
   }
 
   // --- GROUP LOGIC ---
-  
-  // 1. Open Modal (Parse current inputs into chips)
   const openGroupModal = () => {
       setGroupFormName('')
-      // Split current inputs by comma to prepopulate
       setGroupFormTo(toInput ? toInput.split(',').map(s => s.trim()).filter(s => s) : [])
       setGroupFormCc(ccInput ? ccInput.split(',').map(s => s.trim()).filter(s => s) : [])
       setGroupFormBcc(bccInput ? bccInput.split(',').map(s => s.trim()).filter(s => s) : [])
@@ -114,7 +111,6 @@ export default function MailroomPage() {
       setShowGroupModal(true)
   }
 
-  // 2. Save Group
   const saveGroup = () => {
     if (!groupFormName) return showToast("Please enter a group name", 'error')
     if (groupFormTo.length === 0) return showToast("Add at least one TO recipient", 'error')
@@ -135,7 +131,6 @@ export default function MailroomPage() {
     showToast(`Group "${groupFormName}" saved!`, 'success')
   }
 
-  // 3. Load Group
   const loadGroup = (group: EmailGroup) => {
       setToInput(group.to.join(', '))
       setCcInput(group.cc.join(', '))
@@ -144,7 +139,6 @@ export default function MailroomPage() {
       showToast(`Loaded "${group.name}"`, 'success')
   }
 
-  // 4. Delete Group
   const deleteGroup = (id: string, e: React.MouseEvent) => {
       e.stopPropagation()
       if(!confirm("Delete this group?")) return
@@ -219,45 +213,51 @@ export default function MailroomPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 relative pb-20">
+    // MOBILE FIX: Reduced padding p-4 (was p-6), added overflow-x-hidden to prevent horizontal scroll issues
+    <div className="max-w-6xl mx-auto p-4 md:p-6 relative pb-24 overflow-x-hidden">
       
-      {/* HEADER */}
-      <div className="mb-8 flex items-center gap-3">
-        <div className="p-3 bg-black text-white rounded-xl"><Mail className="w-6 h-6"/></div>
+      {/* HEADER: Adjusted text sizes */}
+      <div className="mb-6 md:mb-8 flex items-center gap-3">
+        <div className="p-3 bg-black text-white rounded-xl shadow-sm"><Mail className="w-5 h-5 md:w-6 md:h-6"/></div>
         <div>
-            <h1 className="text-2xl font-bold text-gray-900">Mailroom</h1>
-            <p className="text-gray-500 text-sm">Upload files and manage email lists.</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Mailroom</h1>
+            <p className="text-gray-500 text-xs md:text-sm">Upload files and manage email lists.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* MOBILE FIX: Stacked layout (grid-cols-1) by default, lg:grid-cols-3 for desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         
         {/* --- LEFT: COMPOSER --- */}
-        <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+        <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
+            <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-200 shadow-sm">
                 
                 {/* --- GROUP BAR --- */}
+                {/* Mobile: Horizontal scroll for groups */}
                 <div className="flex flex-wrap gap-2 mb-6 p-3 bg-gray-50 rounded-xl border border-gray-100 items-center">
-                    <span className="text-xs font-bold text-gray-400 uppercase mr-2">Lists:</span>
+                    <span className="text-xs font-bold text-gray-400 uppercase mr-2 w-full md:w-auto mb-2 md:mb-0">Lists:</span>
                     
-                    {groups.map(g => (
-                        <div key={g.id} onClick={() => loadGroup(g)} className="group flex items-center gap-2 cursor-pointer bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-black hover:text-white hover:border-black transition-all shadow-sm">
-                            <Users className="w-3 h-3"/> {g.name}
-                            <div onClick={(e) => deleteGroup(g.id, e)} className="text-gray-300 group-hover:text-red-400 hover:bg-white/20 rounded p-0.5 transition-colors"><X className="w-3 h-3"/></div>
-                        </div>
-                    ))}
-                    
-                    <button onClick={openGroupModal} className="text-xs flex items-center gap-1 font-bold text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors ml-auto">
-                        <Plus className="w-3 h-3"/> New List
-                    </button>
+                    <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                        {groups.map(g => (
+                            <div key={g.id} onClick={() => loadGroup(g)} className="group flex items-center gap-2 cursor-pointer bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-black hover:text-white hover:border-black transition-all shadow-sm active:scale-95">
+                                <Users className="w-3 h-3"/> {g.name}
+                                <div onClick={(e) => deleteGroup(g.id, e)} className="text-gray-300 group-hover:text-red-400 hover:bg-white/20 rounded p-0.5 transition-colors"><X className="w-3 h-3"/></div>
+                            </div>
+                        ))}
+                        
+                        <button onClick={openGroupModal} className="text-xs flex items-center gap-1 font-bold text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors ml-auto md:ml-0 active:bg-blue-100">
+                            <Plus className="w-3 h-3"/> New List
+                        </button>
+                    </div>
                 </div>
 
                 {/* TO FIELD */}
                 <div className="mb-4">
                     <label className="block text-xs font-bold text-gray-400 uppercase mb-2">To (Recipients)</label>
                     <input 
-                        className="w-full bg-white border border-gray-200 rounded-lg p-3 text-sm font-bold focus:ring-2 focus:ring-black outline-none"
-                        placeholder="email1@test.com, email2@test.com..."
+                        // text-base prevents iOS zoom on focus
+                        className="w-full bg-white border border-gray-200 rounded-lg p-3 text-base md:text-sm font-bold focus:ring-2 focus:ring-black outline-none transition-all"
+                        placeholder="email1@test.com, ..."
                         value={toInput}
                         onChange={e => setToInput(e.target.value)}
                     />
@@ -266,7 +266,7 @@ export default function MailroomPage() {
                     {/* QUICK ADD INDIVIDUALS */}
                     <div className="mt-3 flex flex-wrap gap-2">
                         {contacts.slice(0, 5).map(c => (
-                            <button key={c.id} onClick={() => addRecipient(c.email)} className="px-2 py-1 bg-gray-50 border rounded text-[10px] font-bold hover:bg-black hover:text-white transition-colors flex items-center gap-1">
+                            <button key={c.id} onClick={() => addRecipient(c.email)} className="px-2 py-1.5 bg-gray-50 border rounded text-[10px] font-bold hover:bg-black hover:text-white transition-colors flex items-center gap-1 active:bg-gray-200">
                                 <Plus className="w-3 h-3"/> {c.name}
                             </button>
                         ))}
@@ -275,16 +275,16 @@ export default function MailroomPage() {
 
                 {/* CC / BCC */}
                 <div className="mb-4">
-                    <button onClick={() => setShowCc(!showCc)} className="text-xs font-bold text-blue-600 hover:underline">{showCc ? "Hide CC / BCC" : "+ Add CC / BCC"}</button>
+                    <button onClick={() => setShowCc(!showCc)} className="text-xs font-bold text-blue-600 hover:underline p-1 -ml-1">{showCc ? "Hide CC / BCC" : "+ Add CC / BCC"}</button>
                     {showCc && (
                         <div className="space-y-3 mt-3 animate-in fade-in slide-in-from-top-2 bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200">
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">CC</label>
-                                <input className="w-full border rounded p-2 text-sm" placeholder="cc@test.com..." value={ccInput} onChange={e => setCcInput(e.target.value)} />
+                                <input className="w-full border rounded p-2 text-base md:text-sm" placeholder="cc@test.com..." value={ccInput} onChange={e => setCcInput(e.target.value)} />
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">BCC</label>
-                                <input className="w-full border rounded p-2 text-sm" placeholder="bcc@test.com..." value={bccInput} onChange={e => setBccInput(e.target.value)} />
+                                <input className="w-full border rounded p-2 text-base md:text-sm" placeholder="bcc@test.com..." value={bccInput} onChange={e => setBccInput(e.target.value)} />
                             </div>
                         </div>
                     )}
@@ -293,14 +293,14 @@ export default function MailroomPage() {
                 {/* SUBJECT & BODY */}
                 <div className="mb-4">
                     <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Subject</label>
-                    <input className="w-full border border-gray-200 rounded-lg p-3 text-sm font-bold focus:ring-2 focus:ring-black outline-none" value={subject} onChange={e => setSubject(e.target.value)}/>
+                    <input className="w-full border border-gray-200 rounded-lg p-3 text-base md:text-sm font-bold focus:ring-2 focus:ring-black outline-none transition-all" value={subject} onChange={e => setSubject(e.target.value)}/>
                 </div>
                 <div className="mb-6">
                     <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Message</label>
-                    <textarea className="w-full h-40 border border-gray-200 rounded-lg p-3 text-sm font-medium focus:ring-2 focus:ring-black outline-none resize-none" value={message} onChange={e => setMessage(e.target.value)}/>
+                    <textarea className="w-full h-40 border border-gray-200 rounded-lg p-3 text-base md:text-sm font-medium focus:ring-2 focus:ring-black outline-none resize-none transition-all" value={message} onChange={e => setMessage(e.target.value)}/>
                 </div>
 
-                <button onClick={handleSend} disabled={loading || files.length === 0} className="w-full bg-black text-white py-4 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-gray-800 disabled:opacity-50 transition-all shadow-lg">
+                <button onClick={handleSend} disabled={loading || files.length === 0} className="w-full bg-black text-white py-4 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-gray-800 disabled:opacity-50 transition-all shadow-lg active:scale-95">
                     {loading ? <Loader2 className="w-5 h-5 animate-spin"/> : <Send className="w-5 h-5"/>}
                     {loading ? 'Sending...' : `Send Email (${files.length} Attachments)`}
                 </button>
@@ -308,31 +308,33 @@ export default function MailroomPage() {
         </div>
 
         {/* --- RIGHT: ATTACHMENTS --- */}
-        <div className="lg:col-span-1">
-            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm h-full flex flex-col">
+        {/* Mobile: Moved to top (order-1) so users can attach files first */}
+        <div className="lg:col-span-1 order-1 lg:order-2">
+            <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-200 shadow-sm h-full flex flex-col">
                 <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Paperclip className="w-5 h-5 text-blue-600"/> Attachments</h3>
                 
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer relative group">
+                <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 md:p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer relative group active:bg-gray-100">
                     <input type="file" multiple accept=".pdf,.png,.jpg,.jpeg" onChange={handleFileSelect} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"/>
                     <div className="flex flex-col items-center gap-2 pointer-events-none group-hover:scale-105 transition-transform">
-                        <div className="p-4 bg-blue-50 text-blue-600 rounded-full"><Plus className="w-8 h-8"/></div>
-                        <span className="text-sm font-bold text-gray-600">Click or Drag Files</span>
+                        <div className="p-4 bg-blue-50 text-blue-600 rounded-full"><Plus className="w-6 h-6 md:w-8 md:h-8"/></div>
+                        <span className="text-sm font-bold text-gray-600">Tap to Upload</span>
                         <span className="text-xs text-gray-400">PDF, PNG, JPG</span>
                     </div>
                 </div>
 
-                <div className="mt-6 flex-1 overflow-y-auto space-y-3 max-h-[400px]">
-                    {files.length === 0 && <div className="text-center text-gray-400 text-xs py-10 italic">No files attached yet.<br/>Drag them here.</div>}
+                {/* File List */}
+                <div className="mt-6 flex-1 overflow-y-auto space-y-3 max-h-[300px] md:max-h-[400px]">
+                    {files.length === 0 && <div className="text-center text-gray-400 text-xs py-6 italic">No files attached yet.</div>}
                     {files.map((file, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg animate-in slide-in-from-bottom-2">
                             <div className="flex items-center gap-3 overflow-hidden">
                                 <div className="p-2 bg-white rounded border border-gray-100"><FileText className="w-4 h-4 text-red-500"/></div>
                                 <div className="flex flex-col min-w-0">
-                                    <span className="text-sm font-bold text-gray-800 truncate block w-32 lg:w-40">{file.name}</span>
-                                    <span className="text-xs text-gray-500">{(file.size / 1024).toFixed(0)} KB</span>
+                                    <span className="text-sm font-bold text-gray-800 truncate block w-32 md:w-32 lg:w-40">{file.name}</span>
+                                    <span className="text-[10px] text-gray-500">{(file.size / 1024).toFixed(0)} KB</span>
                                 </div>
                             </div>
-                            <button onClick={() => removeFile(idx)} className="p-1 hover:bg-red-100 text-gray-400 hover:text-red-600 rounded"><X className="w-4 h-4"/></button>
+                            <button onClick={() => removeFile(idx)} className="p-2 hover:bg-red-100 text-gray-400 hover:text-red-600 rounded active:bg-red-200"><X className="w-4 h-4"/></button>
                         </div>
                     ))}
                 </div>
@@ -341,50 +343,53 @@ export default function MailroomPage() {
       </div>
 
       {/* --- HISTORY SECTION --- */}
-      <div className="mt-12">
-          <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2"><Clock className="w-5 h-5 text-gray-400"/> History</h3>
+      <div className="mt-8 md:mt-12 order-3">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2"><Clock className="w-5 h-5 text-gray-400"/> History</h3>
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-              <table className="w-full text-left border-collapse">
-                  <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase">
-                      <tr>
-                          <th className="p-4 border-b">Date</th>
-                          <th className="p-4 border-b">Recipients</th>
-                          <th className="p-4 border-b">Subject</th>
-                          <th className="p-4 border-b">Status</th>
-                      </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 text-sm">
-                      {logs.map(log => (
-                          <tr key={log.id} className="hover:bg-gray-50">
-                              <td className="p-4 text-gray-500 w-40">{new Date(log.created_at).toLocaleDateString()} {new Date(log.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                              <td className="p-4 font-bold text-gray-900 max-w-xs truncate" title={log.recipient}>{log.recipient}</td>
-                              <td className="p-4 text-gray-600 max-w-xs truncate">{log.subject}</td>
-                              <td className="p-4"><span className="inline-flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-full text-xs font-bold"><CheckCircle className="w-3 h-3"/> Sent</span></td>
+              {/* Mobile: Horizontal scroll for table */}
+              <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse whitespace-nowrap">
+                      <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase">
+                          <tr>
+                              <th className="p-4 border-b">Date</th>
+                              <th className="p-4 border-b">Recipients</th>
+                              <th className="p-4 border-b">Subject</th>
+                              <th className="p-4 border-b">Status</th>
                           </tr>
-                      ))}
-                      {logs.length === 0 && <tr><td colSpan={4} className="p-8 text-center text-gray-400">No sent history yet.</td></tr>}
-                  </tbody>
-              </table>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 text-sm">
+                          {logs.map(log => (
+                              <tr key={log.id} className="hover:bg-gray-50">
+                                  <td className="p-4 text-gray-500 w-40">{new Date(log.created_at).toLocaleDateString()} {new Date(log.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                  <td className="p-4 font-bold text-gray-900 max-w-xs truncate" title={log.recipient}>{log.recipient}</td>
+                                  <td className="p-4 text-gray-600 max-w-xs truncate">{log.subject}</td>
+                                  <td className="p-4"><span className="inline-flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-full text-xs font-bold"><CheckCircle className="w-3 h-3"/> Sent</span></td>
+                              </tr>
+                          ))}
+                          {logs.length === 0 && <tr><td colSpan={4} className="p-8 text-center text-gray-400">No sent history yet.</td></tr>}
+                      </tbody>
+                  </table>
+              </div>
           </div>
       </div>
 
       {/* --- CREATE GROUP MODAL (WITH CHIPS) --- */}
       {showGroupModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-              <div className="bg-white p-6 rounded-2xl w-full max-w-xl shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+              <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-xl shadow-2xl animate-in zoom-in-95 max-h-[85vh] overflow-y-auto">
                   <div className="flex justify-between items-start mb-6">
                       <div>
-                          <h3 className="font-bold text-xl text-gray-900">Create Email Group</h3>
-                          <p className="text-sm text-gray-500">Add emails and press Enter.</p>
+                          <h3 className="font-bold text-lg md:text-xl text-gray-900">Create Email Group</h3>
+                          <p className="text-xs md:text-sm text-gray-500">Add emails and press Enter.</p>
                       </div>
-                      <button onClick={() => setShowGroupModal(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5"/></button>
+                      <button onClick={() => setShowGroupModal(false)} className="p-2 hover:bg-gray-100 rounded-full active:bg-gray-200"><X className="w-5 h-5"/></button>
                   </div>
                   
-                  <div className="space-y-6">
+                  <div className="space-y-4 md:space-y-6">
                       {/* Name */}
                       <div>
                           <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Group Name</label>
-                          <input autoFocus className="w-full border-2 border-gray-200 p-2 rounded-lg font-bold focus:border-black outline-none" placeholder="e.g. Accounting Team" value={groupFormName} onChange={e => setGroupFormName(e.target.value)}/>
+                          <input autoFocus className="w-full border-2 border-gray-200 p-3 rounded-lg font-bold focus:border-black outline-none text-base md:text-sm" placeholder="e.g. Accounting Team" value={groupFormName} onChange={e => setGroupFormName(e.target.value)}/>
                       </div>
                       
                       {/* TO Chips */}
@@ -392,13 +397,13 @@ export default function MailroomPage() {
                           <label className="block text-xs font-bold text-gray-500 uppercase mb-2">To (Recipients)</label>
                           <div className="border border-gray-200 p-2 rounded-lg min-h-[50px] flex flex-wrap gap-2 focus-within:border-black focus-within:ring-1 focus-within:ring-black">
                               {groupFormTo.map(email => (
-                                  <span key={email} className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                  <span key={email} className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 animate-in zoom-in-50">
                                       {email}
-                                      <button onClick={() => removeChip(email, groupFormTo, setGroupFormTo)} className="hover:text-blue-900"><X className="w-3 h-3"/></button>
+                                      <button onClick={() => removeChip(email, groupFormTo, setGroupFormTo)} className="hover:text-blue-900 p-0.5"><X className="w-3 h-3"/></button>
                                   </span>
                               ))}
                               <input 
-                                  className="flex-1 outline-none text-sm min-w-[150px]" 
+                                  className="flex-1 outline-none text-base md:text-sm min-w-[150px] p-1" 
                                   placeholder="Type email & hit Enter..." 
                                   value={tempTo}
                                   onChange={e => setTempTo(e.target.value)}
@@ -412,13 +417,13 @@ export default function MailroomPage() {
                           <label className="block text-xs font-bold text-gray-500 uppercase mb-2">CC</label>
                           <div className="border border-gray-200 p-2 rounded-lg min-h-[50px] flex flex-wrap gap-2 focus-within:border-black focus-within:ring-1 focus-within:ring-black">
                               {groupFormCc.map(email => (
-                                  <span key={email} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                  <span key={email} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 animate-in zoom-in-50">
                                       {email}
-                                      <button onClick={() => removeChip(email, groupFormCc, setGroupFormCc)} className="hover:text-black"><X className="w-3 h-3"/></button>
+                                      <button onClick={() => removeChip(email, groupFormCc, setGroupFormCc)} className="hover:text-black p-0.5"><X className="w-3 h-3"/></button>
                                   </span>
                               ))}
                               <input 
-                                  className="flex-1 outline-none text-sm min-w-[150px]" 
+                                  className="flex-1 outline-none text-base md:text-sm min-w-[150px] p-1" 
                                   placeholder="Type email & hit Enter..." 
                                   value={tempCc}
                                   onChange={e => setTempCc(e.target.value)}
@@ -432,13 +437,13 @@ export default function MailroomPage() {
                           <label className="block text-xs font-bold text-gray-500 uppercase mb-2">BCC</label>
                           <div className="border border-gray-200 p-2 rounded-lg min-h-[50px] flex flex-wrap gap-2 focus-within:border-black focus-within:ring-1 focus-within:ring-black">
                               {groupFormBcc.map(email => (
-                                  <span key={email} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                  <span key={email} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 animate-in zoom-in-50">
                                       {email}
-                                      <button onClick={() => removeChip(email, groupFormBcc, setGroupFormBcc)} className="hover:text-black"><X className="w-3 h-3"/></button>
+                                      <button onClick={() => removeChip(email, groupFormBcc, setGroupFormBcc)} className="hover:text-black p-0.5"><X className="w-3 h-3"/></button>
                                   </span>
                               ))}
                               <input 
-                                  className="flex-1 outline-none text-sm min-w-[150px]" 
+                                  className="flex-1 outline-none text-base md:text-sm min-w-[150px] p-1" 
                                   placeholder="Type email & hit Enter..." 
                                   value={tempBcc}
                                   onChange={e => setTempBcc(e.target.value)}
@@ -449,8 +454,8 @@ export default function MailroomPage() {
                   </div>
 
                   <div className="flex gap-3 mt-8">
-                      <button onClick={() => setShowGroupModal(false)} className="flex-1 bg-gray-100 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition-colors">Cancel</button>
-                      <button onClick={saveGroup} className="flex-1 bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors shadow-lg flex items-center justify-center gap-2"><Save className="w-4 h-4"/> Save Group</button>
+                      <button onClick={() => setShowGroupModal(false)} className="flex-1 bg-gray-100 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition-colors active:bg-gray-300">Cancel</button>
+                      <button onClick={saveGroup} className="flex-1 bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors shadow-lg flex items-center justify-center gap-2 active:scale-95"><Save className="w-4 h-4"/> Save Group</button>
                   </div>
               </div>
           </div>
@@ -458,7 +463,7 @@ export default function MailroomPage() {
 
       {/* --- TOAST NOTIFICATION --- */}
       {toast.show && (
-          <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl animate-in slide-in-from-right-10 fade-in duration-300 border ${toast.type === 'success' ? 'bg-white border-green-100 text-green-800' : 'bg-white border-red-100 text-red-800'}`}>
+          <div className={`fixed bottom-6 right-6 left-6 md:left-auto z-50 flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl animate-in slide-in-from-bottom-5 md:slide-in-from-right-10 fade-in duration-300 border ${toast.type === 'success' ? 'bg-white border-green-100 text-green-800' : 'bg-white border-red-100 text-red-800'}`}>
               <div className={`p-2 rounded-full ${toast.type === 'success' ? 'bg-green-100' : 'bg-red-100'}`}>
                   {toast.type === 'success' ? <CheckCircle className="w-5 h-5"/> : <AlertCircle className="w-5 h-5"/>}
               </div>
