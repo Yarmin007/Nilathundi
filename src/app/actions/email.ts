@@ -2,6 +2,7 @@
 import { Resend } from 'resend'
 import { createClient } from '@supabase/supabase-js'
 
+// Initialize Supabase Admin Client for logging
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -14,14 +15,11 @@ type Attachment = {
 
 // ---------------------------------------------------------
 // ✅ CONFIGURATION
-// Sender: Uses your verified domain to allow sending to ANYONE.
 const SENDER_IDENTITY = 'Nila Thundi <admin@nilathundi.com>'
-
-// Replies: All replies will go directly to your Gmail.
 const REPLY_TO_EMAIL = 'abdulla.yarmin@gmail.com'
 // ---------------------------------------------------------
 
-// 1. BATCH SENDING (For Mailroom)
+// 1. BATCH SENDING (Mailroom & Reminders)
 export async function sendBatchEmail(
   to: string[],
   cc: string[],
@@ -36,11 +34,16 @@ export async function sendBatchEmail(
     if (!apiKey) throw new Error("Missing RESEND_API_KEY")
     const resend = new Resend(apiKey)
 
+    // 1. Prepare Attachments for Resend
     const formattedAttachments = attachments.map(att => {
       const cleanBase64 = att.content.includes('base64,') ? att.content.split('base64,')[1] : att.content
       return { filename: att.filename, content: Buffer.from(cleanBase64, 'base64') }
     })
 
+    // 2. Extract Filenames for Database Log
+    const fileNames = attachments.map(a => a.filename)
+
+    // 3. Send Email
     const { data, error } = await resend.emails.send({
       from: SENDER_IDENTITY,
       replyTo: REPLY_TO_EMAIL, 
@@ -54,22 +57,25 @@ export async function sendBatchEmail(
 
     if (error) return { success: false, error: error.message }
 
+    // 4. Log to Supabase (Now includes the specific file list)
     await supabase.from('email_logs').insert({
       recipient: to.join(', '),
       subject: subject,
-      attachment_name: `${attachments.length} Files Attached`,
+      attachment_name: `${attachments.length} Files`, // Legacy Summary
+      attachments: fileNames, // <--- NEW: Saves specific list ['PO-123.pdf', 'Schedule.pdf']
       document_type: 'batch',
       document_id: docIds.join(','),
       status: 'sent'
     })
     
-    return { success: true, data }
+    return { success: true, data, attachmentNames: fileNames }
+
   } catch (err: any) {
     return { success: false, error: err.message }
   }
 }
 
-// 2. SINGLE SENDING (For Invoice/Statement Buttons)
+// 2. SINGLE SENDING (Invoice/Statement Buttons)
 export async function sendDocumentEmail(
   toEmail: string, 
   subject: string, 
@@ -98,10 +104,12 @@ export async function sendDocumentEmail(
 
     if (error) return { success: false, error: error.message }
 
+    // Log Single Send
     await supabase.from('email_logs').insert({
       recipient: toEmail,
       subject: subject,
       attachment_name: fileName,
+      attachments: [fileName], // <--- NEW: Array format for consistency
       document_type: docType,
       document_id: docId,
       status: 'sent'
@@ -116,7 +124,7 @@ export async function sendDocumentEmail(
 // 3. HELPER FOR STATEMENTS
 export async function sendStatementEmail(toEmail: string, statementNum: string, pdfBase64: string) {
   const subject = `Statement #${statementNum} - Nila Thundi Investment`
-  const html = `<div style="font-family: sans-serif;"><h2>Billing Statement Available</h2><p>Please find attached statement #${statementNum}.</p></div>`
+  const html = `<div style="font-family: sans-serif;"><h2>Billing Statement Available</h2><p>Please find attached statement #${statementNum}.</p><p>Regards,<br>Nila Thundi Investment</p></div>`
   
   return sendDocumentEmail(
     toEmail, subject, html, 
