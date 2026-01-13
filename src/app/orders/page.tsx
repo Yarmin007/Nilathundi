@@ -43,9 +43,6 @@ export default function Dashboard() {
     let totalKg = 0
 
     fetchedOrders.forEach(order => {
-      // --- FIX 1: WEIGHT CALCULATION ---
-      // If USD -> Weight = Total / 11
-      // If MVR -> Weight = weight_kg column
       let currentWeight = 0
       if (order.currency === 'USD') {
           currentWeight = (order.total_amount || 0) / 11
@@ -68,7 +65,7 @@ export default function Dashboard() {
 
   // --- HELPER: GET DYNAMIC YEAR ---
   const getYearSuffix = (dateStr: string) => {
-    if (!dateStr) return '26' // Fallback
+    if (!dateStr) return '26' 
     return new Date(dateStr).getFullYear().toString().slice(-2)
   }
 
@@ -90,7 +87,7 @@ export default function Dashboard() {
     await supabase.from('orders').update({
       delivery_status: 'Delivered',
       delivery_note_number: nextId,
-      delivery_date: new Date().toISOString().split('T')[0] // Set to Today
+      delivery_date: new Date().toISOString().split('T')[0] 
     }).eq('id', order.id)
 
     await supabase.rpc('increment_counter', { row_key: 'next_delivery_note' })
@@ -100,11 +97,12 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto pb-20 pt-4">
+    // MOBILE FIX: Reduced padding p-4, overflow-hidden to prevent scroll issues
+    <div className="max-w-7xl mx-auto pb-24 pt-4 px-4 overflow-x-hidden">
       
-      {/* Top Header: LOGO */}
-      <div className="flex justify-start mb-12">
-        <div className="w-[350px] h-auto -ml-8 -mt-6">
+      {/* Top Header: LOGO (Responsive Sizing) */}
+      <div className="flex justify-start mb-8 md:mb-12">
+        <div className="w-[280px] md:w-[350px] h-auto -ml-4 md:-ml-8 -mt-4 md:-mt-6">
           <svg viewBox="0 0 1729.2891 1384.0683" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
             <g>
               <polygon fill="#1a1a1a" points="1214.3734 280.2037 1214.3734 820.6929 1022.4915 820.6929 673.8839 472.0855 673.8839 672.6942 821.8838 820.6929 673.8839 820.6929 514.9215 820.6929 514.9215 280.2037 706.8033 280.2037 1055.41 628.8111 1055.41 280.2037 1214.3734 280.2037 1214.3734 280.2037"/>
@@ -116,115 +114,113 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Money Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+      {/* Money Cards (Stacked on Mobile) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-2 mb-3 text-orange-600 font-bold text-xs uppercase tracking-wider"><AlertCircle className="w-4 h-4"/> Pending (MVR)</div>
-          <div className="text-3xl font-extrabold text-gray-900 tracking-tight">{stats.pending.toLocaleString()}</div>
+          <div className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">{stats.pending.toLocaleString()}</div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-2 mb-3 text-green-600 font-bold text-xs uppercase tracking-wider"><DollarSign className="w-4 h-4"/> Earned (MVR)</div>
-          <div className="text-3xl font-extrabold text-gray-900 tracking-tight">{stats.earnedMVR.toLocaleString()}</div>
+          <div className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">{stats.earnedMVR.toLocaleString()}</div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-2 mb-3 text-blue-600 font-bold text-xs uppercase tracking-wider"><DollarSign className="w-4 h-4"/> Earned (USD)</div>
-          <div className="text-3xl font-extrabold text-gray-900 tracking-tight">${stats.earnedUSD.toLocaleString()}</div>
+          <div className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">${stats.earnedUSD.toLocaleString()}</div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
            <div className="flex items-center gap-2 mb-3 text-purple-600 font-bold text-xs uppercase tracking-wider"><Scale className="w-4 h-4"/> Total Weight</div>
-           <div className="text-3xl font-extrabold text-gray-900 tracking-tight">{stats.weight.toFixed(1)} <span className="text-sm text-gray-400 font-medium">kg</span></div>
+           <div className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">{stats.weight.toFixed(1)} <span className="text-sm text-gray-400 font-medium">kg</span></div>
         </div>
       </div>
 
-      {/* The Live Table */}
+      {/* The Live Table (Scrollable on Mobile) */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-         <table className="w-full text-left">
-           <thead className="bg-gray-50 border-b border-gray-100">
-             <tr>
-               <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Delivery Date</th>
-               <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Order Details</th>
-               <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Delivery Status</th>
-               <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Invoice</th>
-               <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Payment</th>
-             </tr>
-           </thead>
-           <tbody className="divide-y divide-gray-100">
-             {loading ? (
-               <tr><td colSpan={5} className="p-12 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400"/></td></tr>
-             ) : orders.length === 0 ? (
-                <tr><td colSpan={5} className="p-12 text-center text-gray-400 font-medium">No orders found.</td></tr>
-             ) : orders.map((order) => {
-               
-               // --- FIX 2: Dynamic Year Suffix ---
-               const yearSuffix = getYearSuffix(order.po_date)
-
-               // --- FIX 3: Display Weight Logic ---
-               const displayWeight = order.currency === 'USD' 
-                   ? (order.total_amount / 11).toFixed(1) 
-                   : (order.weight_kg || 0)
-
-               return (
-               <tr key={order.id} className="hover:bg-gray-50 transition-colors group">
-                 <td className="p-5 text-sm font-medium text-gray-500 w-32">
-                    {order.delivery_date ? order.delivery_date : <span className="text-gray-300 italic">{order.po_date}</span>}
-                 </td>
-                 
-                 <td className="p-5">
-                   <div className="font-bold text-gray-900 text-lg">PO #{order.po_number}</div>
-                   <div className="text-xs text-gray-500 font-bold mt-1 bg-gray-100 inline-block px-2 py-0.5 rounded">
-                     {order.currency} {order.total_amount.toLocaleString()} • <span className="text-black">{displayWeight} kg</span>
-                   </div>
-                 </td>
-
-                 <td className="p-5">
-                   {order.delivery_status === 'Delivered' ? (
-                     <div className="flex items-center gap-3">
-                       <div className="bg-green-100 text-green-700 p-1.5 rounded-full"><CheckCircle2 className="w-4 h-4"/></div>
-                       <div>
-                         <span className="block text-xs font-bold text-green-700 uppercase">Delivered</span>
-                         {/* FIX 4: Hide Delivery Note if null, and use Dynamic Year */}
-                         {order.delivery_note_number && (
-                            <span className="block text-[10px] font-mono text-gray-400">DN: {String(order.delivery_note_number).padStart(2,'0')}/{yearSuffix}</span>
-                         )}
-                       </div>
-                     </div>
-                   ) : (
-                     <button onClick={() => markDelivered(order)} className="flex items-center gap-2 text-gray-600 bg-white border border-gray-200 hover:bg-black hover:text-white hover:border-black px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm">
-                       <Package className="w-4 h-4"/> Mark Delivered
-                     </button>
-                   )}
-                 </td>
-
-                 <td className="p-5">
-                   {order.invoice_number ? (
-                     <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-blue-600"/>
-                        {/* FIX 5: Dynamic Invoice Year */}
-                        <span className="text-sm font-bold font-mono text-blue-600">#{String(order.invoice_number).padStart(4,'0')}/{yearSuffix}</span>
-                     </div>
-                   ) : (
-                     <span className="text-xs font-bold text-gray-400 border border-dashed border-gray-300 px-3 py-1 rounded-full">Not Generated</span>
-                   )}
-                 </td>
-
-                 <td className="p-5 text-right">
-                   <button 
-                     onClick={() => togglePayment(order.id, order.payment_status)}
-                     className={`px-5 py-2 rounded-lg text-xs font-bold border shadow-sm transition-all ${
-                       order.payment_status === 'Paid' 
-                       ? 'bg-black text-white border-black hover:bg-gray-800' 
-                       : 'bg-white text-gray-500 border-gray-200 hover:border-red-500 hover:text-red-500'
-                     }`}
-                   >
-                     {order.payment_status === 'Paid' ? 'PAID' : 'MARK PAID'}
-                   </button>
-                 </td>
-
+         <div className="overflow-x-auto">
+           <table className="w-full text-left whitespace-nowrap">
+             <thead className="bg-gray-50 border-b border-gray-100">
+               <tr>
+                 <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Delivery Date</th>
+                 <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Order Details</th>
+                 <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Delivery Status</th>
+                 <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Invoice</th>
+                 <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Payment</th>
                </tr>
-               )
-             })}
-           </tbody>
-         </table>
+             </thead>
+             <tbody className="divide-y divide-gray-100">
+               {loading ? (
+                 <tr><td colSpan={5} className="p-12 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400"/></td></tr>
+               ) : orders.length === 0 ? (
+                  <tr><td colSpan={5} className="p-12 text-center text-gray-400 font-medium">No orders found.</td></tr>
+               ) : orders.map((order) => {
+                 
+                 const yearSuffix = getYearSuffix(order.po_date)
+
+                 const displayWeight = order.currency === 'USD' 
+                     ? (order.total_amount / 11).toFixed(1) 
+                     : (order.weight_kg || 0)
+
+                 return (
+                 <tr key={order.id} className="hover:bg-gray-50 transition-colors group">
+                   <td className="p-5 text-sm font-medium text-gray-500 w-32">
+                      {order.delivery_date ? order.delivery_date : <span className="text-gray-300 italic">{order.po_date}</span>}
+                   </td>
+                   
+                   <td className="p-5">
+                     <div className="font-bold text-gray-900 text-lg">PO #{order.po_number}</div>
+                     <div className="text-xs text-gray-500 font-bold mt-1 bg-gray-100 inline-block px-2 py-0.5 rounded">
+                       {order.currency} {order.total_amount.toLocaleString()} • <span className="text-black">{displayWeight} kg</span>
+                     </div>
+                   </td>
+
+                   <td className="p-5">
+                     {order.delivery_status === 'Delivered' ? (
+                       <div className="flex items-center gap-3">
+                         <div className="bg-green-100 text-green-700 p-1.5 rounded-full"><CheckCircle2 className="w-4 h-4"/></div>
+                         <div>
+                           <span className="block text-xs font-bold text-green-700 uppercase">Delivered</span>
+                           {order.delivery_note_number && (
+                              <span className="block text-[10px] font-mono text-gray-400">DN: {String(order.delivery_note_number).padStart(2,'0')}/{yearSuffix}</span>
+                           )}
+                         </div>
+                       </div>
+                     ) : (
+                       <button onClick={() => markDelivered(order)} className="flex items-center gap-2 text-gray-600 bg-white border border-gray-200 hover:bg-black hover:text-white hover:border-black px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm active:scale-95">
+                         <Package className="w-4 h-4"/> Mark Delivered
+                       </button>
+                     )}
+                   </td>
+
+                   <td className="p-5">
+                     {order.invoice_number ? (
+                       <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-blue-600"/>
+                          <span className="text-sm font-bold font-mono text-blue-600">#{String(order.invoice_number).padStart(4,'0')}/{yearSuffix}</span>
+                       </div>
+                     ) : (
+                       <span className="text-xs font-bold text-gray-400 border border-dashed border-gray-300 px-3 py-1 rounded-full">Not Generated</span>
+                     )}
+                   </td>
+
+                   <td className="p-5 text-right">
+                     <button 
+                       onClick={() => togglePayment(order.id, order.payment_status)}
+                       className={`px-5 py-2 rounded-lg text-xs font-bold border shadow-sm transition-all ${
+                         order.payment_status === 'Paid' 
+                         ? 'bg-black text-white border-black hover:bg-gray-800' 
+                         : 'bg-white text-gray-500 border-gray-200 hover:border-red-500 hover:text-red-500'
+                       }`}
+                     >
+                       {order.payment_status === 'Paid' ? 'PAID' : 'MARK PAID'}
+                     </button>
+                   </td>
+
+                 </tr>
+                 )
+               })}
+             </tbody>
+           </table>
+         </div>
       </div>
     </div>
   )
