@@ -2,16 +2,14 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // 1. Setup the response
   let response = NextResponse.next({
     request: { headers: request.headers },
   })
 
-  // 2. SAFETY: Use placeholders if keys are missing (Prevents 500 Crash)
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+  // WE REMOVED THE PLACEHOLDERS because Vercel has the real keys now
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-  // 3. Create the Client
   const supabase = createServerClient(
     supabaseUrl,
     supabaseKey,
@@ -32,24 +30,18 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // 4. Check User (Safe Mode)
   let user = null
   try {
     const { data } = await supabase.auth.getUser()
     user = data.user
   } catch (e) {
-    // If connection fails, just treat as logged out
+    // safely handle error
   }
 
-  // 5. SECURITY RULES
   const path = request.nextUrl.pathname
-
-  // If you are NOT logged in, GO TO LOGIN
   if (!user && path !== '/login') {
     return NextResponse.redirect(new URL('/login', request.url))
   }
-
-  // If you ARE logged in, GO TO DASHBOARD
   if (user && path === '/login') {
     return NextResponse.redirect(new URL('/', request.url))
   }
