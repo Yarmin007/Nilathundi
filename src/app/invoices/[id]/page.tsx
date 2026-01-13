@@ -18,7 +18,6 @@ export default function InvoiceView() {
     if (id) fetchOrder()
   }, [id])
 
-  // UPDATE TAB TITLE DYNAMICALLY
   useEffect(() => {
     if (order) {
       const dateObj = new Date(order.po_date || new Date())
@@ -40,7 +39,7 @@ export default function InvoiceView() {
     setLoading(false)
   }
 
-  // --- PRINT CSS ---
+  // --- PRINT CSS (Strict A4 Enforcement) ---
   const printStyles = `
     @page { 
       size: A4 portrait; 
@@ -64,9 +63,12 @@ export default function InvoiceView() {
         border: none !important;
         box-shadow: none !important;
         z-index: 9999;
+        /* Force reset transformations on print */
+        transform: none !important;
+        max-width: none !important;
       }
       html, body {
-        height: 100vh;
+        height: 100%;
         overflow: hidden;
         margin: 0 !important;
         padding: 0 !important;
@@ -80,21 +82,14 @@ export default function InvoiceView() {
   if (!order) return <div className="text-center p-20">Order not found</div>
 
   // --- CALCULATIONS ---
-  // 1. Get Weight (Qty) from DB
   const weight = order.weight_kg || 0
   const totalAmount = order.total_amount
-  
-  // 2. Calculate Unit Price safely
   const unitPrice = weight > 0 ? (totalAmount / weight).toFixed(2) : '0.00'
-  
   const totalFormatted = totalAmount.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })
   
-  // --- DYNAMIC YEAR LOGIC ---
-  // Use Invoice Date for the year suffix if available, else PO Date
   const dateObj = new Date(order.invoice_date || order.po_date || new Date())
-  const yearShort = String(dateObj.getFullYear()).slice(-2) // "25", "26", etc.
+  const yearShort = String(dateObj.getFullYear()).slice(-2) 
 
-  // 3. Format Invoice & Delivery Note with correct year
   const invoiceNo = String(order.invoice_number).padStart(4, '0') + '/' + yearShort
   const deliveryNote = String(order.delivery_note || order.delivery_note_number || '000').padStart(3, '0')
   
@@ -105,39 +100,42 @@ export default function InvoiceView() {
   }
   
   const deliveryDate = formatDates(order.delivery_date || order.po_date)
-  
-  // FIX: Use the actual invoice_date from DB (fallback to delivery -> po)
   const invoiceDate = formatDates(order.invoice_date || order.delivery_date || order.po_date)
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8 flex flex-col items-center print:bg-white print:p-0 print:block">
+    // MOBILE FIX: reduced padding (p-4)
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8 flex flex-col items-center print:bg-white print:p-0 print:block">
       <style>{printStyles}</style>
       
-      {/* TOOLBAR */}
-      <div className="w-[210mm] mb-6 flex justify-between items-center no-print">
-        <Link href="/invoices" className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-black transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to List
+      {/* TOOLBAR: Stacked on Mobile */}
+      <div className="w-full md:w-[210mm] mb-6 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+        <Link href="/invoices" className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-black transition-colors self-start md:self-auto">
+          <ArrowLeft className="w-4 h-4" /> Back
         </Link>
         
-        <div className="flex gap-3">
-            <div className="flex items-center gap-2 text-gray-400 text-xs font-bold uppercase tracking-wider bg-white px-3 py-2 rounded-lg border border-gray-100 cursor-default">
-                <Eye className="w-4 h-4"/> Vector Preview
+        <div className="flex gap-2 w-full md:w-auto">
+            <div className="hidden md:flex items-center gap-2 text-gray-400 text-xs font-bold uppercase tracking-wider bg-white px-3 py-2 rounded-lg border border-gray-100 cursor-default">
+                <Eye className="w-4 h-4"/> Vector
             </div>
             <button 
               onClick={() => window.print()}
-              className="bg-black text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-800 transition-all shadow-md active:scale-95"
+              className="flex-1 md:flex-none justify-center bg-black text-white px-5 py-3 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-800 transition-all shadow-md active:scale-95"
             >
-              <Download className="w-4 h-4" /> Save as PDF
+              <Download className="w-4 h-4" /> Save PDF
             </button>
         </div>
       </div>
 
-      {/* --- INVOICE CONTAINER --- */}
+      {/* --- INVOICE CONTAINER (Responsive) --- */}
+      {/* 1. w-full: Fits mobile screen width 
+          2. md:w-[210mm]: Sticks to A4 width on desktop
+          3. aspect-[210/297]: Keeps A4 shape even when shrinking 
+      */}
       <div 
         id="invoice-container"
-        className="bg-white shadow-2xl overflow-hidden relative mx-auto print:shadow-none"
-        style={{ width: '210mm', height: '297mm' }} 
+        className="bg-white shadow-2xl overflow-hidden relative mx-auto print:shadow-none w-full md:w-[210mm] aspect-[210/297]"
       >
+        {/* SVG ViewBox handles scaling automatically */}
         <svg version="1.1" viewBox="0 0 595.3 841.9" xmlns="http://www.w3.org/2000/svg" className="w-full h-full block">
           <defs>
             <style>{`
@@ -209,9 +207,6 @@ export default function InvoiceView() {
           <rect className="inv2-st10" y="443.6" width="595.3" height="58.7"/>
           <rect className="inv2-st15" y="502.3" width="595.3" height="58.7"/>
           
-          {/* ========================================= */}
-          {/* FIXED ALIGNMENT HEADERS (Strict X)      */}
-          {/* ========================================= */}
           <g className="inv2-st8">
             <text x="36"  y="370" textAnchor="start">Item Description</text>
             <text x="280" y="370" textAnchor="middle">Quantity</text>
@@ -219,9 +214,6 @@ export default function InvoiceView() {
             <text x="550" y="370" textAnchor="end">Total</text>
           </g>
 
-          {/* ========================================= */}
-          {/* DATA ROWS (Strict X Alignment)          */}
-          {/* ========================================= */}
           <g>
             <text className="inv2-st3" x="36" y="411.6" textAnchor="start">Local Dhivehi Hanaakuri Havaadhu</text>
             <text className="inv2-st4" x="36" y="424.3" textAnchor="start">
@@ -234,14 +226,13 @@ export default function InvoiceView() {
           <text className="inv2-st3" x="430" y="417.7" textAnchor="end">{unitPrice}</text>
           <text className="inv2-st3" x="550" y="417.7" textAnchor="end">{totalFormatted}</text>
 
-          {/* FOOTER SECTION */}
+          {/* FOOTER */}
           <text className="inv2-st5" transform="translate(35.6 592.6)">Account Detail:</text>
           <text className="inv2-st5" transform="translate(35.6 615)">Name: </text>
           <text className="inv2-st5" transform="translate(35.6 637.3)" xmlSpace="preserve">Account No:   </text>
           <text className="inv2-st5" transform="translate(134.8 637.3)">7707360119101</text>
           <text className="inv2-st5" transform="translate(134.8 615)">Ibrahim Yoosuf</text>
 
-          {/* SUB TOTALS - ALIGNED RIGHT */}
           <text className="inv2-st5" transform="translate(341.7 590.4)">Subtotal</text>
           <text className="inv2-st5" x="550" y="590.4" textAnchor="end">{totalFormatted}</text> 
           
