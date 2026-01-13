@@ -32,41 +32,41 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-200 w-full max-w-sm">
         
-        {/* LOGO AREA */}
-        <div className="text-center mb-8">
-            <div className="w-24 h-24 mx-auto mb-4 relative">
-                {/* Using your uploaded logo file */}
+        {/* LOGO AREA - Responsive Sizing */}
+        <div className="text-center mb-6 md:mb-8">
+            <div className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-4 relative">
                 <Image 
                     src="/logo-dashboard.svg" 
-                    alt="Nila Thundi Logo" 
+                    alt="Logo" 
                     fill 
                     className="object-contain"
                     priority
                 />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Nila Thundi Investment</h1>
-            <p className="text-gray-500 text-sm mt-1">Authorized Personnel Only</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Nila Thundi</h1>
+            <p className="text-gray-400 text-xs md:text-sm mt-1 uppercase tracking-wide font-bold">Authorized Access</p>
         </div>
 
         {/* ERROR MESSAGE */}
         {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600">
-                <AlertCircle className="w-5 h-5"/>
-                <span className="text-sm font-bold">{error}</span>
+            <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600">
+                <AlertCircle className="w-4 h-4 flex-shrink-0"/>
+                <span className="text-xs font-bold leading-tight">{error}</span>
             </div>
         )}
 
         {/* LOGIN FORM */}
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4 md:space-y-5">
             <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Email Address</label>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 ml-1">Email</label>
                 <input 
                     type="email" 
                     required
-                    className="w-full border-2 border-gray-100 rounded-xl p-3 font-bold text-gray-900 focus:border-black outline-none transition-colors"
+                    // text-base prevents iOS zoom
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-base font-bold text-gray-900 focus:bg-white focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
                     placeholder="admin@nilathundi.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -74,11 +74,11 @@ export default function LoginPage() {
             </div>
 
             <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Password</label>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 ml-1">Password</label>
                 <input 
                     type="password" 
                     required
-                    className="w-full border-2 border-gray-100 rounded-xl p-3 font-bold text-gray-900 focus:border-black outline-none transition-colors"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-base font-bold text-gray-900 focus:bg-white focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -88,15 +88,15 @@ export default function LoginPage() {
             <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg hover:bg-gray-800 transition-all shadow-lg flex justify-center items-center gap-2 disabled:opacity-50"
+                className="w-full bg-black text-white py-4 rounded-xl font-bold text-base hover:bg-gray-800 active:scale-95 transition-all shadow-md flex justify-center items-center gap-2 disabled:opacity-70 disabled:active:scale-100 mt-2"
             >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin"/> : "Sign In"}
+                {loading ? <Loader2 className="w-5 h-5 animate-spin"/> : "Enter Dashboard"}
             </button>
         </form>
 
         <div className="mt-8 text-center">
-            <p className="text-xs text-gray-400">
-                &copy; {new Date().getFullYear()} Nila Thundi Investment. Private System.
+            <p className="text-[10px] text-gray-300 font-medium uppercase tracking-widest">
+                Private System • {new Date().getFullYear()}
             </p>
         </div>
 
