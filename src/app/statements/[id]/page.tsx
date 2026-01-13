@@ -45,7 +45,7 @@ export default function StatementView() {
       return new Date(dateStr).getFullYear().toString().slice(-2)
   }
 
-  // --- PRINT CSS ---
+  // --- PRINT CSS (Strict A4) ---
   const printStyles = `
     @page { 
       size: A4 portrait; 
@@ -69,6 +69,7 @@ export default function StatementView() {
         border: none !important;
         box-shadow: none !important;
         z-index: 9999;
+        transform: none !important;
       }
       html, body {
         height: 100vh;
@@ -136,24 +137,28 @@ export default function StatementView() {
   const stmtDate = new Date(statement.created_at).toLocaleDateString('en-GB')
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8 flex flex-col items-center print:bg-white print:p-0">
+    // MOBILE FIX: p-4 instead of p-8
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8 flex flex-col items-center print:bg-white print:p-0 print:block">
       <style>{printStyles}</style>
       
-      {/* TOOLBAR */}
-      <div className="w-[210mm] mb-6 flex justify-between items-center no-print">
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-black">
+      {/* TOOLBAR: Stacked on mobile */}
+      <div className="w-full md:w-[210mm] mb-6 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-black self-start md:self-auto">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <button onClick={() => window.print()} className="bg-black text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-800 shadow-md">
+        <button 
+          onClick={() => window.print()} 
+          className="w-full md:w-auto bg-black text-white px-5 py-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2 hover:bg-gray-800 shadow-md active:scale-95 transition-transform"
+        >
           <Printer className="w-4 h-4" /> Print / Save PDF
         </button>
       </div>
 
-      {/* SVG CONTAINER */}
+      {/* SVG CONTAINER: Responsive Logic */}
+      {/* w-full fits mobile, md:w-[210mm] locks to A4 width on PC, aspect-[210/297] keeps A4 shape */}
       <div 
         id="statement-container"
-        className="bg-white shadow-2xl overflow-hidden relative mx-auto print:shadow-none" 
-        style={{ width: '210mm', height: '297mm' }}
+        className="bg-white shadow-2xl overflow-hidden relative mx-auto print:shadow-none w-full md:w-[210mm] aspect-[210/297]" 
       >
         <svg version="1.1" viewBox="0 0 595.3 841.9" xmlns="http://www.w3.org/2000/svg" className="w-full h-full block">
           <defs>
@@ -269,8 +274,6 @@ export default function StatementView() {
             <text className="st4" transform="translate(456.8 774.2)">7707360119101</text>
           </g>
 
-          {/* I REMOVED THE BROKEN LINE HERE */}
-          
           <text className="st4" transform="translate(69.7 800.3)">Ibrahim Yoosuf</text>
           <text className="st4" transform="translate(92.5 822.8)">Director</text>
 
