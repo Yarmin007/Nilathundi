@@ -207,22 +207,24 @@ export default function StatementsPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto pb-20 pt-8 relative">
+    // MOBILE FIX: p-4 instead of p-8, added overflow-x-hidden
+    <div className="max-w-5xl mx-auto pb-24 pt-6 px-4 relative overflow-x-hidden">
       
-      <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+      {/* HEADER: Stacked on Mobile */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 md:mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Statements</h1>
-          <p className="text-gray-500 font-medium mt-1">Monthly billing summaries.</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Statements</h1>
+          <p className="text-sm md:text-base text-gray-500 font-medium mt-1">Monthly billing summaries.</p>
         </div>
         
-        <div className="flex gap-3 items-center">
+        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center w-full md:w-auto">
             {/* YEAR FILTER */}
             <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
               <Filter className="w-4 h-4 text-gray-400" />
               <select 
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer"
+                className="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer w-full"
               >
                 <option value="all">All Years</option>
                 {availableYears.map(year => (
@@ -233,14 +235,14 @@ export default function StatementsPage() {
 
             <button 
                 onClick={() => setShowModal(true)}
-                className="bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-all shadow-md"
+                className="bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
             >
-                <Plus className="w-5 h-5"/> New Statement
+                <Plus className="w-5 h-5"/> <span className="md:hidden lg:inline">New Statement</span> <span className="hidden md:inline lg:hidden">New</span>
             </button>
         </div>
       </div>
 
-      {/* STATEMENTS LIST */}
+      {/* STATEMENTS LIST: Scrollable on Mobile */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm min-h-[300px]">
         {loading ? (
           <div className="p-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-300"/></div>
@@ -250,70 +252,72 @@ export default function StatementsPage() {
             <p>No statements found.</p>
           </div>
         ) : (
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Statement #</th>
-                <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Period</th>
-                <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Total Due</th>
-                <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {statements.map((stmt) => (
-                <tr key={stmt.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="p-5">
-                    <span className="font-mono font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded text-sm">
-                      #{String(stmt.statement_number).padStart(4, '0')}/{new Date(stmt.created_at).getFullYear().toString().slice(-2)}
-                    </span>
-                    <div className="text-xs text-gray-400 mt-1">Generated: {new Date(stmt.created_at).toLocaleDateString('en-GB')}</div>
-                  </td>
-                  <td className="p-5 text-sm font-medium text-gray-600">
-                    {new Date(stmt.start_date).toLocaleDateString('en-GB')} <span className="text-gray-300 mx-1">➜</span> {new Date(stmt.end_date).toLocaleDateString('en-GB')}
-                  </td>
-                  <td className="p-5 text-sm font-bold text-gray-900">
-                    {stmt.total_amount?.toLocaleString()} MVR
-                  </td>
-                  <td className="p-5 text-right flex justify-end gap-2">
-                    <Link href={`/statements/${stmt.id}`} className="text-gray-500 hover:text-black hover:bg-gray-100 p-2 rounded-lg transition-all" title="View">
-                      <Eye className="w-5 h-5"/>
-                    </Link>
-                    <button onClick={() => promptDelete(stmt.id)} className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all">
-                      <Trash2 className="w-4 h-4"/>
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left whitespace-nowrap">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Statement #</th>
+                  <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Period</th>
+                  <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Total Due</th>
+                  <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {statements.map((stmt) => (
+                  <tr key={stmt.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="p-5">
+                      <span className="font-mono font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded text-sm">
+                        #{String(stmt.statement_number).padStart(4, '0')}/{new Date(stmt.created_at).getFullYear().toString().slice(-2)}
+                      </span>
+                      <div className="text-xs text-gray-400 mt-1">Generated: {new Date(stmt.created_at).toLocaleDateString('en-GB')}</div>
+                    </td>
+                    <td className="p-5 text-sm font-medium text-gray-600">
+                      {new Date(stmt.start_date).toLocaleDateString('en-GB')} <span className="text-gray-300 mx-1">➜</span> {new Date(stmt.end_date).toLocaleDateString('en-GB')}
+                    </td>
+                    <td className="p-5 text-sm font-bold text-gray-900">
+                      {stmt.total_amount?.toLocaleString()} MVR
+                    </td>
+                    <td className="p-5 text-right flex justify-end gap-2">
+                      <Link href={`/statements/${stmt.id}`} className="text-gray-500 hover:text-black hover:bg-gray-100 p-2.5 rounded-lg transition-all border border-transparent hover:border-gray-200" title="View">
+                        <Eye className="w-5 h-5"/>
+                      </Link>
+                      <button onClick={() => promptDelete(stmt.id)} className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2.5 rounded-lg transition-all border border-transparent hover:border-red-100">
+                        <Trash2 className="w-5 h-5"/>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       {/* --- NEW STATEMENT MODAL --- */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-             <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+             <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-5 md:p-6 max-h-[90vh] flex flex-col">
                 <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-extrabold text-gray-900">New Statement</h3>
-                    <button onClick={() => setShowModal(false)}><X className="w-6 h-6 text-gray-400 hover:text-black"/></button>
+                    <h3 className="text-lg md:text-xl font-extrabold text-gray-900">New Statement</h3>
+                    <button onClick={() => setShowModal(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-6 h-6 text-gray-400 hover:text-black"/></button>
                 </div>
 
                 <div className="space-y-4 mb-4 flex-shrink-0">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Start Date</label>
-                            <input type="date" className="w-full bg-white border border-gray-200 rounded-lg p-3 text-sm"
+                            <input type="date" className="w-full bg-white border border-gray-200 rounded-lg p-3 text-base md:text-sm font-bold"
                                 value={dateRange.start} onChange={e => setDateRange({...dateRange, start: e.target.value})} />
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">End Date</label>
-                            <input type="date" className="w-full bg-white border border-gray-200 rounded-lg p-3 text-sm"
+                            <input type="date" className="w-full bg-white border border-gray-200 rounded-lg p-3 text-base md:text-sm font-bold"
                                 value={dateRange.end} onChange={e => setDateRange({...dateRange, end: e.target.value})} />
                         </div>
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Date on Paper (Optional)</label>
-                        <input type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm font-bold"
+                        <input type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-base md:text-sm font-bold"
                             value={docDate} onChange={e => setDocDate(e.target.value)} />
                     </div>
                 </div>
@@ -321,33 +325,33 @@ export default function StatementsPage() {
                 {/* --- SELECTION LIST --- */}
                 <div className="flex-1 overflow-hidden flex flex-col bg-gray-50 rounded-xl border border-gray-100 mb-4">
                     <div className="p-3 bg-gray-100 border-b border-gray-200 flex justify-between items-center">
-                        <span className="text-xs font-bold text-gray-500 uppercase">Select Invoices to Include</span>
+                        <span className="text-xs font-bold text-gray-500 uppercase">Select Invoices</span>
                         <span className="text-xs bg-white px-2 py-0.5 rounded font-bold">{selectedOrderIds.size} / {availableOrders.length}</span>
                     </div>
                     <div className="overflow-y-auto p-2 space-y-1">
                         {availableOrders.length === 0 ? (
-                            <div className="p-4 text-center text-xs text-gray-400">No invoices found in this range.</div>
+                            <div className="p-6 text-center text-xs text-gray-400">No invoices found in this range.</div>
                         ) : availableOrders.map(order => {
                             const isSelected = selectedOrderIds.has(order.id)
                             return (
                                 <div 
                                     key={order.id} 
                                     onClick={() => toggleOrder(order.id)}
-                                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all active:scale-98 ${
                                         isSelected 
                                         ? 'bg-white border-blue-200 shadow-sm' 
                                         : 'bg-transparent border-transparent hover:bg-gray-100 opacity-50'
                                     }`}
                                 >
-                                    <div className={isSelected ? 'text-blue-600' : 'text-gray-400'}>
-                                        {isSelected ? <CheckSquare className="w-5 h-5"/> : <Square className="w-5 h-5"/>}
+                                    <div className={isSelected ? 'text-blue-600' : 'text-gray-300'}>
+                                        {isSelected ? <CheckSquare className="w-6 h-6"/> : <Square className="w-6 h-6"/>}
                                     </div>
                                     <div className="flex-1">
-                                        <div className="flex justify-between">
+                                        <div className="flex justify-between items-center">
                                             <span className={`text-sm font-bold ${isSelected ? 'text-gray-900' : 'text-gray-500'}`}>
                                                 Inv #{String(order.invoice_number).padStart(4,'0')}
                                             </span>
-                                            <span className={`text-sm font-mono ${isSelected ? 'text-black' : 'text-gray-400'}`}>
+                                            <span className={`text-sm font-mono font-bold ${isSelected ? 'text-black' : 'text-gray-400'}`}>
                                                 {order.total_amount?.toLocaleString()}
                                             </span>
                                         </div>
@@ -363,11 +367,11 @@ export default function StatementsPage() {
 
                 {/* PREVIEW BOX */}
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex-shrink-0 mb-4">
-                    <div className="flex justify-between text-sm mb-3 text-gray-600">
-                        <span className="flex items-center gap-1">Previous Balance (Past Unpaid) <AlertCircle className="w-3 h-3"/>:</span>
+                    <div className="flex justify-between text-xs md:text-sm mb-3 text-gray-600">
+                        <span className="flex items-center gap-1">Prev. Balance <AlertCircle className="w-3 h-3"/>:</span>
                         <span className="font-bold">{prevOutstanding.toLocaleString()}</span>
                     </div>
-                    <div className="border-t border-gray-200 pt-3 flex justify-between text-lg font-extrabold text-gray-900">
+                    <div className="border-t border-gray-200 pt-3 flex justify-between text-base md:text-lg font-extrabold text-gray-900">
                         <span>Total Due:</span>
                         <span>{(previewNewTotal + prevOutstanding).toLocaleString()} MVR</span>
                     </div>
@@ -376,7 +380,7 @@ export default function StatementsPage() {
                 <button 
                     onClick={generateStatement} 
                     disabled={genLoading}
-                    className="w-full bg-black text-white font-bold py-4 rounded-xl hover:bg-gray-800 disabled:opacity-50 flex justify-center items-center gap-2"
+                    className="w-full bg-black text-white font-bold py-4 rounded-xl hover:bg-gray-800 disabled:opacity-50 flex justify-center items-center gap-2 active:scale-95 transition-transform"
                 >
                     {genLoading ? <Loader2 className="w-5 h-5 animate-spin"/> : 'Generate Statement'}
                 </button>
@@ -386,14 +390,14 @@ export default function StatementsPage() {
       
       {/* DELETE CONFIRMATION */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full scale-100 animate-in zoom-in-95 duration-200">
                  <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Statement?</h3>
-                 <p className="text-gray-500 text-sm mb-6">This will only delete the statement document. The invoices inside it will remain safe.</p>
+                 <p className="text-gray-500 text-sm mb-6 leading-relaxed">This will only delete the statement document. The invoices inside it will remain safe.</p>
                  <div className="flex gap-3">
-                    <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-3 border border-gray-200 rounded-xl font-bold text-gray-600">Cancel</button>
-                    <button onClick={confirmDelete} disabled={deleteLoading} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700">
-                        {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto"/> : 'Delete'}
+                    <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-3 border border-gray-200 rounded-xl font-bold text-gray-600 active:bg-gray-50">Cancel</button>
+                    <button onClick={confirmDelete} disabled={deleteLoading} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 active:bg-red-800 flex justify-center items-center">
+                        {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Delete'}
                     </button>
                  </div>
             </div>
