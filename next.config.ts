@@ -8,8 +8,8 @@ const withPWA = require("next-pwa")({
   disable: process.env.NODE_ENV === "development",
 });
 
-const nextConfig: NextConfig = {
-  // Moved to root based on Next.js 16 error logs
+const nextConfig = {
+  // In Next.js 16, reactCompiler is moved to the root, not 'experimental'
   reactCompiler: true,
 };
 
