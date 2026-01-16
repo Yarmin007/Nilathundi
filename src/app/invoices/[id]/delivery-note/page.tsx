@@ -25,14 +25,31 @@ export default function DeliveryNoteView() {
     setOrder(data)
   }
 
+  // --- MOBILE PDF FIX (STRICT A4) ---
   const printStyles = `
     @page { size: A4 portrait; margin: 0; }
     @media print {
-      body { min-width: 210mm !important; margin: 0; padding: 0; background: white; -webkit-print-color-adjust: exact; }
+      html, body {
+        min-width: 210mm !important; 
+        width: 210mm !important;
+        height: 297mm !important;
+        margin: 0 !important; 
+        padding: 0 !important; 
+        background: white; 
+        -webkit-print-color-adjust: exact; 
+        overflow: hidden !important;
+      }
       nav, .no-print { display: none !important; }
       #dn-container { 
-        width: 210mm !important; height: 297mm !important; 
-        position: absolute; top: 0; left: 0; margin: 0 !important; border: none !important; overflow: hidden !important;
+        width: 100% !important; 
+        height: 100% !important; 
+        position: absolute; 
+        top: 0; 
+        left: 0; 
+        margin: 0 !important; 
+        border: none !important; 
+        overflow: hidden !important; 
+        transform: none !important;
       }
     }
   `
@@ -129,17 +146,15 @@ export default function DeliveryNoteView() {
           <rect className="st4" x="286.9" y="246.6" width="308.3" height="71.2"/>
           <text className="st9" transform="translate(311.6 286.5)">Total Due:</text>
           
-          {/* MVR Symbol */}
           {isMVR && (
              <path className="st7" d="M430.2,283c-.1-.1-.2-.2-.3-.3-.5-.4-.7-1-.5-1.6.2-.6.7-1,1.3-1,.6,0,1.2.2,1.8.4.2,0,.4.1.6.2.3.2.6.1.9-.1.3-.3.6-.5,1-.8,0,0-.2-.1-.2-.2-.4-.2-.6-.6-.7-1.1-.1-1.2.6-1.9,1.8-1.7.6.1,1.1.3,1.7.5.3,0,.5,0,.7,0,1.8-1,3.7-1.9,5.5-2.9,0,0,.1,0,.2,0,.4-.3.8-.3,1.3,0,.4.3.6,1,.5,1.4-.2.4-.6.6-.9.8-1.2.6-2.5,1.2-3.7,1.8,0,0-.2,0-.3.2.2,0,.3.1.4.1.5.2,1.1.4,1.6.7.5.3.8,1.1.6,1.8-.2.5-.7.9-1.4.8-.6,0-1.2-.2-1.8-.4-.7-.2-1.4-.4-2.1-.6-.2,0-.3,0-.5.1-.3.3-.6.5-1,.8.5.2.9.4,1.3.6.7.4,1,.9.9,1.7,0,.7-.6,1.2-1.3,1.2-.4,0-.7,0-1.1-.2-1-.3-2-.6-2.9-.9-.2,0-.3,0-.5,0-1.9,1.2-3.8,2.5-5.7,3.7-1.3.8-2.6,1.5-4,2-.4.1-.8.2-1.1.3-.4,0-.7,0-.9-.3-.8-.7-1-1.5-1-2.5,0-.3.2-.6.6-.6.3,0,.6,0,1,0,.3,0,.5,0,.8,0,.6,0,1.2,0,1.7-.3,1.7-.8,3.3-1.8,4.9-2.8.3-.2.7-.4,1.1-.7"/>
           )}
           
-          {/* AMOUNT TEXT - Cleanly Right Aligned */}
           <text className="st8" transform="translate(585 292.8)" textAnchor="end">
              {!isMVR && '$'}{totalFormatted}
           </text>
 
-          {/* TABLE HEADER */}
+          {/* TABLE */}
           <rect className="st12" y="384.9" width="595.3" height="58.7"/>
           <text className="st5" transform="translate(35.6 370)">Item Description</text>
           <text className="st5" transform="translate(235.1 370)" textAnchor="middle">Quantity</text>
@@ -152,7 +167,6 @@ export default function DeliveryNoteView() {
           <text className="st2" transform="translate(374.4 417.7)" textAnchor="end" x="50">{unitPrice}</text>
           <text className="st2" transform="translate(513.8 417.7)" textAnchor="end" x="35">{totalFormatted}</text>
 
-          {/* FOOTER */}
           <text className="st10" transform="translate(341.7 506.7)">Subtotal</text>
           <text className="st10" transform="translate(507.5 506.7)" textAnchor="end" x="40">{totalFormatted}</text>
 

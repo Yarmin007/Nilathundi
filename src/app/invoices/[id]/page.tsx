@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useParams, useRouter } from 'next/navigation'
-import { Loader2, Download, ArrowLeft, Eye, Truck } from 'lucide-react'
+import { Loader2, Download, ArrowLeft, Truck } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,22 +28,24 @@ export default function InvoiceView() {
     setOrder(data)
   }
 
-  // --- MOBILE PDF FIX ---
+  // --- MOBILE PDF FIX (STRICT A4) ---
   const printStyles = `
     @page { size: A4 portrait; margin: 0; }
     @media print {
-      body { 
+      html, body {
         min-width: 210mm !important; 
-        width: 210mm !important; 
-        margin: 0; 
-        padding: 0; 
+        width: 210mm !important;
+        height: 297mm !important;
+        margin: 0 !important; 
+        padding: 0 !important; 
         background: white; 
         -webkit-print-color-adjust: exact; 
+        overflow: hidden !important;
       }
       nav, .no-print { display: none !important; }
       #invoice-container { 
-        width: 210mm !important; 
-        height: 297mm !important; 
+        width: 100% !important; 
+        height: 100% !important; 
         position: absolute; 
         top: 0; 
         left: 0; 
@@ -64,7 +66,11 @@ export default function InvoiceView() {
   const totalFormatted = totalAmount.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })
   const yearShort = String(new Date(order.invoice_date || order.po_date).getFullYear()).slice(-2)
   const invoiceNo = String(order.invoice_number).padStart(4, '0') + '/' + yearShort
-  const deliveryNote = String(order.delivery_note || order.delivery_note_number || '000').padStart(3, '0')
+  
+  // DN Logic
+  const dnRaw = order.delivery_note || order.delivery_note_number || 0
+  const deliveryNote = `${String(dnRaw).padStart(2, '0')}/${yearShort}`
+  
   const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('en-GB') : ''
   const deliveryDate = formatDate(order.delivery_date || order.po_date)
   const invoiceDate = formatDate(order.invoice_date || order.delivery_date || order.po_date)
@@ -80,7 +86,6 @@ export default function InvoiceView() {
         </button>
         
         <div className="flex flex-wrap gap-2 w-full md:w-auto justify-end">
-            {/* NEW: DELIVERY NOTE BUTTON */}
             <button 
                 onClick={() => router.push(`/invoices/${id}/delivery-note`)}
                 className="bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-50 shadow-sm"
@@ -94,7 +99,6 @@ export default function InvoiceView() {
         </div>
       </div>
 
-      {/* INVOICE SVG CONTAINER (Your Original Code) */}
       <div 
         id="invoice-container"
         className="bg-white shadow-2xl overflow-hidden relative mx-auto print:shadow-none w-full md:w-[210mm] aspect-[210/297]"
