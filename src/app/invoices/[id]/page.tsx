@@ -1,141 +1,104 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { useParams } from 'next/navigation'
-import { Loader2, Download, ArrowLeft, Eye } from 'lucide-react'
-import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
+import { Loader2, Download, ArrowLeft, Eye, Truck } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
 export default function InvoiceView() {
   const params = useParams()
+  const router = useRouter()
   const id = params?.id as string
 
   const [order, setOrder] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (id) fetchOrder()
-  }, [id])
+  useEffect(() => { if (id) fetchOrder() }, [id])
 
   useEffect(() => {
     if (order) {
-      const dateObj = new Date(order.po_date || new Date())
-      const yearShort = String(dateObj.getFullYear()).slice(-2)
+      const yearShort = new Date(order.po_date || new Date()).getFullYear().toString().slice(-2)
       const invNum = String(order.invoice_number).padStart(4, '0')
       document.title = `Invoice-${invNum}-${yearShort}` 
     }
-    return () => { document.title = 'Spice Track V2' }
   }, [order])
 
   const fetchOrder = async () => {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('id', id)
-      .single()
-    
-    if (data) setOrder(data)
-    setLoading(false)
+    const { data } = await supabase.from('orders').select('*').eq('id', id).single()
+    setOrder(data)
   }
 
-  // --- PRINT CSS (Strict A4 Enforcement) ---
+  // --- MOBILE PDF FIX ---
   const printStyles = `
-    @page { 
-      size: A4 portrait; 
-      margin: 0 !important; 
-    }
+    @page { size: A4 portrait; margin: 0; }
     @media print {
-      body * {
-        visibility: hidden;
-      }
-      #invoice-container, #invoice-container * {
-        visibility: visible;
-      }
-      #invoice-container {
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 210mm !important;
-        height: 297mm !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
-        z-index: 9999;
-        /* Force reset transformations on print */
-        transform: none !important;
-        max-width: none !important;
-      }
-      html, body {
-        height: 100%;
-        overflow: hidden;
-        margin: 0 !important;
-        padding: 0 !important;
-        background: white;
+      body { 
+        min-width: 210mm !important; 
+        width: 210mm !important; 
+        margin: 0; 
+        padding: 0; 
+        background: white; 
+        -webkit-print-color-adjust: exact; 
       }
       nav, .no-print { display: none !important; }
+      #invoice-container { 
+        width: 210mm !important; 
+        height: 297mm !important; 
+        position: absolute; 
+        top: 0; 
+        left: 0; 
+        margin: 0 !important; 
+        border: none !important; 
+        overflow: hidden !important; 
+        transform: none !important;
+      }
     }
   `
 
-  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin w-8 h-8 text-gray-400" /></div>
-  if (!order) return <div className="text-center p-20">Order not found</div>
+  if (!order) return <div className="flex justify-center p-20"><Loader2 className="animate-spin w-8 h-8 text-gray-400" /></div>
 
-  // --- CALCULATIONS ---
+  // Calculations
   const weight = order.weight_kg || 0
   const totalAmount = order.total_amount
   const unitPrice = weight > 0 ? (totalAmount / weight).toFixed(2) : '0.00'
   const totalFormatted = totalAmount.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })
-  
-  const dateObj = new Date(order.invoice_date || order.po_date || new Date())
-  const yearShort = String(dateObj.getFullYear()).slice(-2) 
-
+  const yearShort = String(new Date(order.invoice_date || order.po_date).getFullYear()).slice(-2)
   const invoiceNo = String(order.invoice_number).padStart(4, '0') + '/' + yearShort
   const deliveryNote = String(order.delivery_note || order.delivery_note_number || '000').padStart(3, '0')
-  
-  const formatDates = (dateStr: string) => {
-    if(!dateStr) return ''
-    const [y, m, d] = dateStr.split('-')
-    return `${d}/${m}/${y.slice(-2)}`
-  }
-  
-  const deliveryDate = formatDates(order.delivery_date || order.po_date)
-  const invoiceDate = formatDates(order.invoice_date || order.delivery_date || order.po_date)
+  const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('en-GB') : ''
+  const deliveryDate = formatDate(order.delivery_date || order.po_date)
+  const invoiceDate = formatDate(order.invoice_date || order.delivery_date || order.po_date)
 
   return (
-    // MOBILE FIX: reduced padding (p-4)
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8 flex flex-col items-center print:bg-white print:p-0 print:block">
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8 flex flex-col items-center">
       <style>{printStyles}</style>
       
-      {/* TOOLBAR: Stacked on Mobile */}
+      {/* TOOLBAR */}
       <div className="w-full md:w-[210mm] mb-6 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
-        <Link href="/invoices" className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-black transition-colors self-start md:self-auto">
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-black self-start md:self-auto">
           <ArrowLeft className="w-4 h-4" /> Back
-        </Link>
+        </button>
         
-        <div className="flex gap-2 w-full md:w-auto">
-            <div className="hidden md:flex items-center gap-2 text-gray-400 text-xs font-bold uppercase tracking-wider bg-white px-3 py-2 rounded-lg border border-gray-100 cursor-default">
-                <Eye className="w-4 h-4"/> Vector
-            </div>
+        <div className="flex flex-wrap gap-2 w-full md:w-auto justify-end">
+            {/* NEW: DELIVERY NOTE BUTTON */}
             <button 
-              onClick={() => window.print()}
-              className="flex-1 md:flex-none justify-center bg-black text-white px-5 py-3 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-800 transition-all shadow-md active:scale-95"
+                onClick={() => router.push(`/invoices/${id}/delivery-note`)}
+                className="bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-50 shadow-sm"
             >
+                <Truck className="w-4 h-4" /> Delivery Note
+            </button>
+
+            <button onClick={() => window.print()} className="bg-black text-white px-5 py-3 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-800 shadow-md">
               <Download className="w-4 h-4" /> Save PDF
             </button>
         </div>
       </div>
 
-      {/* --- INVOICE CONTAINER (Responsive) --- */}
-      {/* 1. w-full: Fits mobile screen width 
-          2. md:w-[210mm]: Sticks to A4 width on desktop
-          3. aspect-[210/297]: Keeps A4 shape even when shrinking 
-      */}
+      {/* INVOICE SVG CONTAINER (Your Original Code) */}
       <div 
         id="invoice-container"
         className="bg-white shadow-2xl overflow-hidden relative mx-auto print:shadow-none w-full md:w-[210mm] aspect-[210/297]"
       >
-        {/* SVG ViewBox handles scaling automatically */}
         <svg version="1.1" viewBox="0 0 595.3 841.9" xmlns="http://www.w3.org/2000/svg" className="w-full h-full block">
           <defs>
             <style>{`
@@ -189,7 +152,6 @@ export default function InvoiceView() {
           <text className="inv2-st6" transform="translate(286.9 230.5)">Delivery Note:</text>
           <text className="inv2-st6" transform="translate(426.5 230.5)">{deliveryNote}</text>
 
-          {/* TOTAL DUE BOX */}
           <rect className="inv2-st7" x="286.9" y="246.6" width="308.3" height="71.2"/>
           <text className="inv2-st13" transform="translate(311.6 286.5)">Total Due:</text>
           
@@ -202,7 +164,6 @@ export default function InvoiceView() {
              {order.currency === 'USD' ? '$' : ''}{totalFormatted}
           </text>
 
-          {/* TABLE BACKGROUNDS */}
           <rect className="inv2-st15" y="384.9" width="595.3" height="58.7"/>
           <rect className="inv2-st10" y="443.6" width="595.3" height="58.7"/>
           <rect className="inv2-st15" y="502.3" width="595.3" height="58.7"/>
@@ -226,7 +187,6 @@ export default function InvoiceView() {
           <text className="inv2-st3" x="430" y="417.7" textAnchor="end">{unitPrice}</text>
           <text className="inv2-st3" x="550" y="417.7" textAnchor="end">{totalFormatted}</text>
 
-          {/* FOOTER */}
           <text className="inv2-st5" transform="translate(35.6 592.6)">Account Detail:</text>
           <text className="inv2-st5" transform="translate(35.6 615)">Name: </text>
           <text className="inv2-st5" transform="translate(35.6 637.3)" xmlSpace="preserve">Account No:   </text>

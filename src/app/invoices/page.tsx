@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { CheckCircle, Printer, Loader2, ArrowRight, X, Filter } from 'lucide-react'
+import { CheckCircle, Printer, Loader2, ArrowRight, X, Filter, FileText, Truck } from 'lucide-react'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -106,23 +106,20 @@ export default function InvoicesPage() {
   }
 
   return (
-    // MOBILE FIX: Added px-4
-    <div className="max-w-5xl mx-auto pb-24 pt-6 px-4 relative">
+    <div className="max-w-6xl mx-auto pb-24 pt-6 px-4 relative">
       
       <div className="mb-6 md:mb-8">
         <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Invoices</h1>
         <p className="text-sm md:text-base text-gray-500 font-medium mt-1">Manage and generate your billing documents.</p>
       </div>
 
-      {/* CONTROLS: Stacked on Mobile */}
+      {/* CONTROLS */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        {/* Tabs */}
         <div className="flex w-full md:w-auto gap-1 bg-gray-100/50 p-1 rounded-xl border border-gray-200">
           <button onClick={() => setActiveTab('pending')} className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all ${activeTab === 'pending' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:text-black'}`}>To Generate</button>
           <button onClick={() => setActiveTab('history')} className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all ${activeTab === 'history' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:text-black'}`}>History</button>
         </div>
 
-        {/* Filter */}
         <div className="w-full md:w-auto flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-3 md:py-2 shadow-sm">
           <Filter className="w-4 h-4 text-gray-400" />
           <select 
@@ -138,7 +135,7 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      {/* TABLE: Scrollable on Mobile */}
+      {/* TABLE */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm min-h-[300px]">
         {loading ? (
           <div className="p-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-300"/></div>
@@ -156,7 +153,7 @@ export default function InvoicesPage() {
                   <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Qty</th>
                   <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
                   <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                    {activeTab === 'history' ? 'Invoice #' : 'Delivery Note'}
+                    {activeTab === 'history' ? 'Refs' : 'Delivery Note'}
                   </th>
                   <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
                 </tr>
@@ -183,9 +180,14 @@ export default function InvoicesPage() {
                       
                       <td className="p-5">
                         {activeTab === 'history' ? (
-                          <span className="font-mono text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded text-xs">
-                            #{String(order.invoice_number).padStart(4, '0')}/{yearShort}
-                          </span>
+                          <div className="flex flex-col gap-1">
+                             <span className="font-mono text-blue-600 font-bold text-xs">
+                               Inv: #{String(order.invoice_number).padStart(4, '0')}/{yearShort}
+                             </span>
+                             <span className="font-mono text-green-600 font-bold text-xs">
+                               DN: {order.delivery_note ? String(order.delivery_note).padStart(2, '0') : '--'}
+                             </span>
+                          </div>
                         ) : (
                           <span className="font-mono text-green-600 font-bold bg-green-50 px-2 py-1 rounded text-xs">
                             DN: {order.delivery_note ? String(order.delivery_note).padStart(2, '0') : '--'}/{yearShort}
@@ -199,9 +201,15 @@ export default function InvoicesPage() {
                             Generate <ArrowRight className="w-3 h-3"/>
                           </button>
                         ) : (
-                          <Link href={`/invoices/${order.id}`} className="text-gray-500 hover:text-black hover:bg-gray-100 p-2.5 rounded-lg inline-flex transition-all active:bg-gray-200 border border-transparent hover:border-gray-200">
-                            <Printer className="w-5 h-5"/>
-                          </Link>
+                          <div className="flex justify-end gap-2">
+                             {/* DIRECT ACTION BUTTONS */}
+                             <Link href={`/invoices/${order.id}`} className="group bg-blue-50 hover:bg-blue-100 text-blue-600 p-2.5 rounded-lg transition-all border border-blue-100" title="View Invoice">
+                                <FileText className="w-5 h-5"/>
+                             </Link>
+                             <Link href={`/invoices/${order.id}/delivery-note`} className="group bg-green-50 hover:bg-green-100 text-green-600 p-2.5 rounded-lg transition-all border border-green-100" title="View Delivery Note">
+                                <Truck className="w-5 h-5"/>
+                             </Link>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -213,7 +221,7 @@ export default function InvoicesPage() {
         )}
       </div>
       
-      {/* MOBILE FRIENDLY MODAL */}
+      {/* MODAL */}
       {showModal && selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 scale-100 animate-in zoom-in-95 duration-200">

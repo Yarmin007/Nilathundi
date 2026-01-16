@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useParams, useRouter } from 'next/navigation'
-import { Loader2, Download, ArrowLeft } from 'lucide-react'
+import { Loader2, Download, ArrowLeft, Truck, Pencil } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,17 +26,29 @@ export default function GeneralInvoiceView() {
     setInvoice(data)
   }
 
+  // --- MOBILE PDF FIX ---
   const printStyles = `
-    @page { size: A4 portrait; margin: 0 !important; }
+    @page { size: A4 portrait; margin: 0; }
     @media print {
-      body * { visibility: hidden; }
-      #invoice-container, #invoice-container * { visibility: visible; }
-      #invoice-container {
-        position: fixed; left: 0; top: 0; width: 210mm !important; height: 297mm !important;
-        margin: 0 !important; padding: 0 !important; border: none !important; z-index: 9999; transform: none !important;
+      body { 
+        min-width: 210mm !important; 
+        margin: 0; 
+        padding: 0; 
+        background: white; 
+        -webkit-print-color-adjust: exact; 
       }
-      html, body { height: 100%; overflow: hidden; margin: 0 !important; padding: 0 !important; background: white; }
       nav, .no-print { display: none !important; }
+      #invoice-container { 
+        width: 210mm !important; 
+        height: 297mm !important; 
+        position: absolute; 
+        top: 0; 
+        left: 0; 
+        margin: 0 !important; 
+        border: none !important; 
+        overflow: hidden !important; 
+        transform: none !important;
+      }
     }
   `
 
@@ -51,28 +63,38 @@ export default function GeneralInvoiceView() {
   const dateObj = new Date(invoice.date)
   const invoiceDate = `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}/${String(dateObj.getFullYear()).slice(-2)}`
 
-  // --- UPDATED LAYOUT CONSTANTS ---
-  const ROW_HEIGHT = 35 // Made thinner (was 58.7)
+  // Layout Constants
+  const ROW_HEIGHT = 35 
   const TABLE_START_Y = 384.9
-  const TEXT_OFFSET_Y = 20 // Adjusted for thinner row
-  
+  const TEXT_OFFSET_Y = 20
   const minFooterY = 590
   const tableEndY = TABLE_START_Y + (items.length * ROW_HEIGHT)
-  const footerStartY = Math.max(minFooterY, tableEndY + 40) // +40 gap
+  const footerStartY = Math.max(minFooterY, tableEndY + 40)
   const footerOffset = footerStartY - minFooterY
   const svgHeight = Math.max(841.9, footerStartY + 250)
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8 flex flex-col items-center print:bg-white print:p-0 print:block">
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8 flex flex-col items-center">
       <style>{printStyles}</style>
       
       <div className="w-full md:w-[210mm] mb-6 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
         <button onClick={() => router.back()} className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-black self-start md:self-auto">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <button onClick={() => window.print()} className="bg-black text-white px-5 py-3 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-800 shadow-md">
-          <Download className="w-4 h-4" /> Save PDF
-        </button>
+        
+        <div className="flex flex-wrap gap-2 w-full md:w-auto justify-end">
+             {/* EDIT BUTTON */}
+             <button 
+                onClick={() => router.push(`/general-invoices/${id}/edit`)}
+                className="bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-50 shadow-sm"
+            >
+                <Pencil className="w-4 h-4" /> Edit
+            </button>
+
+            <button onClick={() => window.print()} className="bg-black text-white px-5 py-3 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-800 shadow-md">
+                <Download className="w-4 h-4" /> Save PDF
+            </button>
+        </div>
       </div>
 
       <div id="invoice-container" className="bg-white shadow-2xl overflow-hidden relative mx-auto print:shadow-none w-full md:w-[210mm] aspect-[210/297]">
@@ -93,12 +115,11 @@ export default function GeneralInvoiceView() {
               .inv2-st5,.inv2-st6,.inv2-st8,.inv2-st14{font-family:sans-serif;font-weight:bold;}
               .inv2-st5,.inv2-st8{font-size:14px;}
               .inv2-st6,.inv2-st14{font-size:16px;}
-              .inv2-st3{font-size:10.5px;} /* Slightly smaller main text */
+              .inv2-st3{font-size:10.5px;}
               .inv2-st4{font-size:9px;}
               .inv2-st9{fill-rule:evenodd;}
               .inv2-st15{fill:#e6e7e8;}
               .inv2-st16{fill:#1a1a1a;}
-              /* UPDATED SUB-DESC STYLE: Black and small */
               .sub-desc{font-size: 8.5px; fill: #231f20; font-family: sans-serif; font-weight: normal;}
             `}</style>
           </defs>
