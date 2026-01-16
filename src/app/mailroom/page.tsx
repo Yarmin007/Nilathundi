@@ -37,33 +37,30 @@ export default function MailroomPage() {
   // Groups
   const [groups, setGroups] = useState<EmailGroup[]>([])
   const [showGroupModal, setShowGroupModal] = useState(false)
-  const [editingGroup, setEditingGroup] = useState<EmailGroup | null>(null) // TRACK EDITING
+  const [editingGroup, setEditingGroup] = useState<EmailGroup | null>(null)
 
   // Group Form Inputs
   const [groupFormName, setGroupFormName] = useState('')
   const [groupFormTo, setGroupFormTo] = useState<string[]>([])
   const [groupFormCc, setGroupFormCc] = useState<string[]>([])
   const [groupFormBcc, setGroupFormBcc] = useState<string[]>([])
-  // Temp inputs for chips
   const [tempTo, setTempTo] = useState(''); const [tempCc, setTempCc] = useState(''); const [tempBcc, setTempBcc] = useState('')
 
-  // --- REMINDER FEATURE STATE ---
+  // Reminder State
   const [showReminderModal, setShowReminderModal] = useState(false)
-  const [reminderDate, setReminderDate] = useState('') // Default tomorrow
+  const [reminderDate, setReminderDate] = useState('')
   const [reminderOrders, setReminderOrders] = useState<any[]>([])
   const [nextDN, setNextDN] = useState<number>(0)
   const [loadingReminders, setLoadingReminders] = useState(false)
 
   const [toast, setToast] = useState<ToastType>({ show: false, message: '', type: 'success' })
 
-  // --- INIT ---
   useEffect(() => { 
     fetchContacts()
     fetchHistory()
     const saved = localStorage.getItem('email_groups_v3')
     if (saved) setGroups(JSON.parse(saved))
     
-    // Set default reminder date to Tomorrow
     const tmrw = new Date(); tmrw.setDate(tmrw.getDate() + 1);
     setReminderDate(tmrw.toISOString().split('T')[0])
   }, [])
@@ -83,7 +80,6 @@ export default function MailroomPage() {
     setTimeout(() => setToast(prev => ({ ...prev, show: false })), 4000)
   }
 
-  // --- CHIP LOGIC ---
   const addChip = (e: React.KeyboardEvent, list: string[], setList: Function, val: string, setVal: Function) => {
       if (e.key === 'Enter' || e.key === ',') {
           e.preventDefault()
@@ -96,7 +92,6 @@ export default function MailroomPage() {
   }
   const removeChip = (email: string, list: string[], setList: Function) => setList(list.filter(e => e !== email))
 
-  // --- GROUP LOGIC ---
   const openGroupModal = (groupToEdit?: EmailGroup) => {
       if (groupToEdit) {
           setEditingGroup(groupToEdit)
@@ -158,12 +153,10 @@ export default function MailroomPage() {
       showToast("Group deleted", 'success')
   }
 
-  // --- REMINDER LOGIC ---
   const checkReminders = async () => {
       setLoadingReminders(true)
       setShowReminderModal(true)
       
-      // 1. Fetch Orders for Date
       const { data: orders } = await supabase
         .from('orders')
         .select('*')
@@ -172,7 +165,6 @@ export default function MailroomPage() {
       
       setReminderOrders(orders || [])
 
-      // 2. Fetch Next DN
       const { data: setting } = await supabase.from('settings').select('value').eq('key', 'next_delivery_note').single()
       setNextDN(setting?.value || 1)
       
@@ -182,57 +174,16 @@ export default function MailroomPage() {
   const loadReminderIntoComposer = () => {
       if (reminderOrders.length === 0) return
       
-      // Build HTML Table for Email
-      let tableRows = reminderOrders.map((o, index) => `
-        <tr>
-            <td style="padding: 8px; border: 1px solid #ddd;">${o.po_number}</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">${o.weight_kg} kg</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">${nextDN + index} (Predicted)</td>
-        </tr>
-      `).join('')
-
-      const reminderBody = `
-Dear Team,
-
-Here is the delivery schedule for <b>${new Date(reminderDate).toLocaleDateString()}</b>:
-
-<table style="border-collapse: collapse; width: 100%; max-width: 500px;">
-  <thead>
-    <tr style="background-color: #f3f3f3;">
-        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">PO Number</th>
-        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Qty</th>
-        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Delivery Note</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${tableRows}
-  </tbody>
-</table>
-
-Please ensure readiness.
-
-Regards,
-Nila Thundi
-      `
-
-      setSubject(`Delivery Schedule - ${new Date(reminderDate).toLocaleDateString()}`)
-      setMessage(reminderBody) // Note: This is HTML, our sender needs to handle it as text unless we switch to HTML input. 
-      // For simple text area, we strip HTML or use a flag. 
-      // *SIMPLIFIED FOR THIS TEXTAREA*: We will convert to text for the textarea, 
-      // but in a real app you'd want a rich text editor.
-      // Let's stick to text for now to match your textarea.
-      
       const textBody = `Dear Team,\n\nHere is the delivery schedule for ${new Date(reminderDate).toLocaleDateString()}:\n\n` +
       reminderOrders.map((o, i) => `PO: ${o.po_number} | Qty: ${o.weight_kg}kg | DN: ${nextDN + i} (Predicted)`).join('\n') +
       `\n\nRegards,\nNila Thundi`
 
+      setSubject(`Delivery Schedule - ${new Date(reminderDate).toLocaleDateString()}`)
       setMessage(textBody)
       setShowReminderModal(false)
       showToast("Reminder loaded into composer!", 'success')
   }
 
-
-  // --- SEND LOGIC ---
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) setFiles(prev => [...prev, ...Array.from(e.target.files || [])])
   }
@@ -263,12 +214,11 @@ Nila Thundi
       )
 
       if (res.success) {
-        // SAVE LOG TO DB
         const { error: logError } = await supabase.from('email_logs').insert([{
             recipient: toInput,
             subject: subject,
             status: 'Sent',
-            attachments: res.attachmentNames || [] // Save filenames here
+            attachments: res.attachmentNames || []
         }])
 
         if (logError) console.error("Log Error", logError)
@@ -297,7 +247,6 @@ Nila Thundi
                 <p className="text-gray-500 text-xs md:text-sm">Manage emails & reminders.</p>
             </div>
         </div>
-        {/* REMINDER BUTTON */}
         <button onClick={() => checkReminders()} className="bg-orange-50 text-orange-700 px-4 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 border border-orange-100 hover:bg-orange-100 transition-colors">
             <Bell className="w-4 h-4"/> Check Reminders
         </button>
@@ -316,9 +265,7 @@ Nila Thundi
                         {groups.map(g => (
                             <div key={g.id} onClick={() => loadGroup(g)} className="group flex items-center gap-2 cursor-pointer bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:border-black transition-all shadow-sm active:scale-95">
                                 <Users className="w-3 h-3"/> {g.name}
-                                {/* Edit Button */}
                                 <div onClick={(e) => { e.stopPropagation(); openGroupModal(g) }} className="text-gray-300 hover:text-blue-500 p-1"><Pencil className="w-3 h-3"/></div>
-                                {/* Delete Button */}
                                 <div onClick={(e) => deleteGroup(g.id, e)} className="text-gray-300 hover:text-red-500 p-1"><X className="w-3 h-3"/></div>
                             </div>
                         ))}
@@ -381,43 +328,67 @@ Nila Thundi
         </div>
       </div>
 
-      {/* --- HISTORY TABLE (IMPROVED) --- */}
+      {/* --- HISTORY TABLE (RESPONSIVE UPDATE) --- */}
       <div className="mt-12 order-3">
           <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2"><Clock className="w-5 h-5 text-gray-400"/> Sent History</h3>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm overflow-x-auto">
-              <table className="w-full text-left whitespace-nowrap">
-                  <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase">
-                      <tr>
-                          <th className="p-4 border-b">Sent Time</th>
-                          <th className="p-4 border-b">Recipient</th>
-                          <th className="p-4 border-b">Subject</th>
-                          <th className="p-4 border-b">Attachments</th>
-                      </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 text-sm">
-                      {logs.map(log => (
-                          <tr key={log.id} className="hover:bg-gray-50">
-                              <td className="p-4 text-gray-500">
-                                  <div className="font-bold text-gray-900">{new Date(log.created_at).toLocaleDateString()}</div>
-                                  <div className="text-xs">{new Date(log.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                              </td>
-                              <td className="p-4 font-bold text-gray-900 max-w-xs truncate" title={log.recipient}>{log.recipient}</td>
-                              <td className="p-4 text-gray-600 max-w-xs truncate">{log.subject}</td>
-                              <td className="p-4">
-                                  {log.attachments && log.attachments.length > 0 ? (
-                                      <div className="flex flex-col gap-1">
-                                          {log.attachments.map((f: string, i: number) => (
-                                              <span key={i} className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100">
-                                                  <Paperclip className="w-3 h-3"/> {f}
-                                              </span>
-                                          ))}
-                                      </div>
-                                  ) : <span className="text-gray-400 text-xs">None</span>}
-                              </td>
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+              
+              {/* MOBILE CARD VIEW */}
+              <div className="block md:hidden divide-y divide-gray-100">
+                  {logs.map(log => (
+                      <div key={log.id} className="p-5 flex flex-col gap-2">
+                          <div className="flex justify-between items-start">
+                              <div className="font-bold text-gray-900 break-all pr-4 text-sm">{log.recipient}</div>
+                              <span className="text-xs text-gray-400">{new Date(log.created_at).toLocaleDateString()}</span>
+                          </div>
+                          <div className="text-sm text-gray-600 font-medium">{log.subject}</div>
+                          {log.attachments && log.attachments.length > 0 && (
+                              <div className="flex gap-1 mt-1">
+                                  {log.attachments.map((f: string, i: number) => (
+                                      <span key={i} className="inline-flex items-center gap-1 text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100"><Paperclip className="w-3 h-3"/> File</span>
+                                  ))}
+                              </div>
+                          )}
+                      </div>
+                  ))}
+              </div>
+
+              {/* DESKTOP TABLE VIEW */}
+              <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left whitespace-nowrap">
+                      <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase">
+                          <tr>
+                              <th className="p-4 border-b">Sent Time</th>
+                              <th className="p-4 border-b">Recipient</th>
+                              <th className="p-4 border-b">Subject</th>
+                              <th className="p-4 border-b">Attachments</th>
                           </tr>
-                      ))}
-                  </tbody>
-              </table>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 text-sm">
+                          {logs.map(log => (
+                              <tr key={log.id} className="hover:bg-gray-50">
+                                  <td className="p-4 text-gray-500">
+                                      <div className="font-bold text-gray-900">{new Date(log.created_at).toLocaleDateString()}</div>
+                                      <div className="text-xs">{new Date(log.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                  </td>
+                                  <td className="p-4 font-bold text-gray-900 max-w-xs truncate" title={log.recipient}>{log.recipient}</td>
+                                  <td className="p-4 text-gray-600 max-w-xs truncate">{log.subject}</td>
+                                  <td className="p-4">
+                                      {log.attachments && log.attachments.length > 0 ? (
+                                          <div className="flex flex-col gap-1">
+                                              {log.attachments.map((f: string, i: number) => (
+                                                  <span key={i} className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100">
+                                                      <Paperclip className="w-3 h-3"/> {f}
+                                                  </span>
+                                              ))}
+                                          </div>
+                                      ) : <span className="text-gray-400 text-xs">None</span>}
+                                  </td>
+                              </tr>
+                          ))}
+                      </tbody>
+                  </table>
+              </div>
           </div>
       </div>
 

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { FileText, Plus, Loader2, Eye, Trash2, X, AlertCircle, CheckSquare, Square, Filter } from 'lucide-react'
+import { FileText, Plus, Loader2, Eye, Trash2, X, AlertCircle, CheckSquare, Square, Filter, Calendar } from 'lucide-react'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -207,7 +207,6 @@ export default function StatementsPage() {
   }
 
   return (
-    // MOBILE FIX: p-4 instead of p-8, added overflow-x-hidden
     <div className="max-w-5xl mx-auto pb-24 pt-6 px-4 relative overflow-x-hidden">
       
       {/* HEADER: Stacked on Mobile */}
@@ -242,7 +241,7 @@ export default function StatementsPage() {
         </div>
       </div>
 
-      {/* STATEMENTS LIST: Scrollable on Mobile */}
+      {/* STATEMENTS LIST */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm min-h-[300px]">
         {loading ? (
           <div className="p-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-300"/></div>
@@ -252,44 +251,87 @@ export default function StatementsPage() {
             <p>No statements found.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left whitespace-nowrap">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Statement #</th>
-                  <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Period</th>
-                  <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Total Due</th>
-                  <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+          <>
+            {/* --- MOBILE CARD VIEW (New) --- */}
+            <div className="block md:hidden divide-y divide-gray-100">
                 {statements.map((stmt) => (
-                  <tr key={stmt.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-5">
-                      <span className="font-mono font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded text-sm">
-                        #{String(stmt.statement_number).padStart(4, '0')}/{new Date(stmt.created_at).getFullYear().toString().slice(-2)}
-                      </span>
-                      <div className="text-xs text-gray-400 mt-1">Generated: {new Date(stmt.created_at).toLocaleDateString('en-GB')}</div>
-                    </td>
-                    <td className="p-5 text-sm font-medium text-gray-600">
-                      {new Date(stmt.start_date).toLocaleDateString('en-GB')} <span className="text-gray-300 mx-1">➜</span> {new Date(stmt.end_date).toLocaleDateString('en-GB')}
-                    </td>
-                    <td className="p-5 text-sm font-bold text-gray-900">
-                      {stmt.total_amount?.toLocaleString()} MVR
-                    </td>
-                    <td className="p-5 text-right flex justify-end gap-2">
-                      <Link href={`/statements/${stmt.id}`} className="text-gray-500 hover:text-black hover:bg-gray-100 p-2.5 rounded-lg transition-all border border-transparent hover:border-gray-200" title="View">
-                        <Eye className="w-5 h-5"/>
-                      </Link>
-                      <button onClick={() => promptDelete(stmt.id)} className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2.5 rounded-lg transition-all border border-transparent hover:border-red-100">
-                        <Trash2 className="w-5 h-5"/>
-                      </button>
-                    </td>
-                  </tr>
+                    <div key={stmt.id} className="p-5 flex flex-col gap-3 relative">
+                        {/* Clickable Area for View */}
+                        <Link href={`/statements/${stmt.id}`} className="absolute inset-0 z-0"></Link>
+                        
+                        <div className="flex justify-between items-start relative z-10 pointer-events-none">
+                            <span className="font-mono font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded text-xs border border-purple-100">
+                                #{String(stmt.statement_number).padStart(4, '0')}/{new Date(stmt.created_at).getFullYear().toString().slice(-2)}
+                            </span>
+                            <span className="font-extrabold text-gray-900 text-lg">
+                                {stmt.total_amount?.toLocaleString()} <span className="text-xs font-medium text-gray-400">MVR</span>
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs text-gray-500 font-medium bg-gray-50 p-2 rounded-lg w-fit relative z-10 pointer-events-none">
+                            <Calendar className="w-3 h-3"/>
+                            {new Date(stmt.start_date).toLocaleDateString('en-GB')} ➜ {new Date(stmt.end_date).toLocaleDateString('en-GB')}
+                        </div>
+
+                        <div className="flex justify-between items-center mt-1 relative z-20">
+                            <div className="text-xs text-gray-400 pointer-events-none">
+                               Generated: {new Date(stmt.created_at).toLocaleDateString('en-GB')}
+                            </div>
+                            <button 
+                                onClick={(e) => {
+                                    e.preventDefault(); 
+                                    e.stopPropagation();
+                                    promptDelete(stmt.id)
+                                }} 
+                                className="text-red-400 hover:text-red-600 bg-white border border-gray-200 hover:border-red-200 p-2 rounded-lg transition-all shadow-sm active:scale-95"
+                            >
+                                <Trash2 className="w-4 h-4"/>
+                            </button>
+                        </div>
+                    </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
+            </div>
+
+            {/* --- DESKTOP TABLE VIEW --- */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left whitespace-nowrap">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Statement #</th>
+                    <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Period</th>
+                    <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Total Due</th>
+                    <th className="p-5 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {statements.map((stmt) => (
+                    <tr key={stmt.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="p-5">
+                        <span className="font-mono font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded text-sm">
+                          #{String(stmt.statement_number).padStart(4, '0')}/{new Date(stmt.created_at).getFullYear().toString().slice(-2)}
+                        </span>
+                        <div className="text-xs text-gray-400 mt-1">Generated: {new Date(stmt.created_at).toLocaleDateString('en-GB')}</div>
+                      </td>
+                      <td className="p-5 text-sm font-medium text-gray-600">
+                        {new Date(stmt.start_date).toLocaleDateString('en-GB')} <span className="text-gray-300 mx-1">➜</span> {new Date(stmt.end_date).toLocaleDateString('en-GB')}
+                      </td>
+                      <td className="p-5 text-sm font-bold text-gray-900">
+                        {stmt.total_amount?.toLocaleString()} MVR
+                      </td>
+                      <td className="p-5 text-right flex justify-end gap-2">
+                        <Link href={`/statements/${stmt.id}`} className="text-gray-500 hover:text-black hover:bg-gray-100 p-2.5 rounded-lg transition-all border border-transparent hover:border-gray-200" title="View">
+                          <Eye className="w-5 h-5"/>
+                        </Link>
+                        <button onClick={() => promptDelete(stmt.id)} className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2.5 rounded-lg transition-all border border-transparent hover:border-red-100">
+                          <Trash2 className="w-5 h-5"/>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

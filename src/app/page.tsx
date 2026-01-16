@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { Loader2, DollarSign, Package, CheckCircle2, AlertCircle, FileText, Scale, Filter, Menu } from 'lucide-react'
+import { Loader2, DollarSign, Package, CheckCircle2, AlertCircle, FileText, Scale, Filter } from 'lucide-react'
 import AlertDialog from '@/components/AlertDialog'
 
 export const dynamic = 'force-dynamic'
@@ -117,13 +117,11 @@ export default function Dashboard() {
   }
 
   return (
-    // MOBILE FIX: Added horizontal padding (px-4)
-    <div className="max-w-7xl mx-auto pb-20 pt-4 md:pt-8 px-4 relative">
+    <div className="max-w-7xl mx-auto pb-24 pt-4 md:pt-8 px-4 relative">
       
-      {/* HEADER: Flex-col for mobile (stacks vertically), Row for Desktop */}
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-center md:items-end mb-6 md:mb-10 gap-6">
         <div className="h-16 md:h-24 w-auto">
-          {/* Logo SVG */}
           <svg viewBox="0 0 1729.3 1384.1" className="h-full w-auto" xmlns="http://www.w3.org/2000/svg">
             <defs><style>{`.cls-1{font-size:270px;font-family:sans-serif;font-weight:800;fill:#000;}.cls-2{font-size:139px;font-family:sans-serif;font-weight:600;fill:#000;letter-spacing:0.05em;}.shape-black{fill:#1a1a1a;}.shape-orange{fill:#f26722;}`}</style></defs>
             <g>
@@ -135,7 +133,7 @@ export default function Dashboard() {
           </svg>
         </div>
 
-        {/* FILTERS: Full width on mobile */}
+        {/* FILTERS */}
         <div className="flex w-full md:w-auto justify-between md:justify-start gap-2 bg-white p-1 rounded-xl shadow-sm border border-gray-200">
            <div className="flex items-center px-3 text-gray-400"><Filter className="w-4 h-4" /></div>
            <select value={month} onChange={(e) => setMonth(e.target.value)} className="bg-transparent font-bold text-sm p-2 outline-none cursor-pointer text-gray-700 flex-1 md:flex-none">
@@ -153,7 +151,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* STATS CARDS: Grid 1 column on mobile, 5 on desktop */}
+      {/* STATS CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-4 mb-8">
         {/* Pending MVR */}
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-row md:flex-col justify-between items-center md:items-start">
@@ -167,9 +165,15 @@ export default function Dashboard() {
           <div className="text-2xl md:text-3xl font-extrabold text-gray-900">${stats.pendingUSD.toLocaleString()}</div>
         </div>
 
-        {/* Earned MVR */}
+        {/* Earned MVR (FIX: Replaced Dollar Sign with MVR SVG) */}
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-row md:flex-col justify-between items-center md:items-start">
-          <div className="flex items-center gap-2 text-green-600 font-bold text-xs uppercase"><DollarSign className="w-4 h-4"/> Earned (MVR)</div>
+          <div className="flex items-center gap-2 text-green-600 font-bold text-xs uppercase">
+             {/* MVR SVG SYMBOL */}
+             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 595.3 841.9" className="w-4 h-4 fill-current">
+                <path d="M430.2,283c-.1-.1-.2-.2-.3-.3-.5-.4-.7-1-.5-1.6.2-.6.7-1,1.3-1,.6,0,1.2.2,1.8.4.2,0,.4.1.6.2.3.2.6.1.9-.1.3-.3.6-.5,1-.8,0,0-.2-.1-.2-.2-.4-.2-.6-.6-.7-1.1-.1-1.2.6-1.9,1.8-1.7.6.1,1.1.3,1.7.5.3,0,.5,0,.7,0,1.8-1,3.7-1.9,5.5-2.9,0,0,.1,0,.2,0,.4-.3.8-.3,1.3,0,.4.3.6,1,.5,1.4-.2.4-.6.6-.9.8-1.2.6-2.5,1.2-3.7,1.8,0,0-.2,0-.3.2.2,0,.3.1.4.1.5.2,1.1.4,1.6.7.5.3.8,1.1.6,1.8-.2.5-.7.9-1.4.8-.6,0-1.2-.2-1.8-.4-.7-.2-1.4-.4-2.1-.6-.2,0-.3,0-.5.1-.3.3-.6.5-1,.8.5.2.9.4,1.3.6.7.4,1,.9.9,1.7,0,.7-.6,1.2-1.3,1.2-.4,0-.7,0-1.1-.2-1-.3-2-.6-2.9-.9-.2,0-.3,0-.5,0-1.9,1.2-3.8,2.5-5.7,3.7-1.3.8-2.6,1.5-4,2-.4.1-.8.2-1.1.3-.4,0-.7,0-.9-.3-.8-.7-1-1.5-1-2.5,0-.3.2-.6.6-.6.3,0,.6,0,1,0,.3,0,.5,0,.8,0,.6,0,1.2,0,1.7-.3,1.7-.8,3.3-1.8,4.9-2.8.3-.2.7-.4,1.1-.7"/>
+             </svg> 
+             Earned (MVR)
+          </div>
           <div className="text-2xl md:text-3xl font-extrabold text-gray-900">{stats.earnedMVR.toLocaleString()}</div>
         </div>
 
@@ -186,97 +190,148 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* TABLE: Added overflow-x-auto to make it scrollable on mobile */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
          <div className="p-4 border-b border-gray-100 bg-gray-50/50">
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Order List</span>
          </div>
          
-         <div className="overflow-x-auto">
-           <table className="w-full text-left whitespace-nowrap">
-             <thead className="bg-gray-50 border-b border-gray-100">
-               <tr>
-                 <th className="p-5 text-xs font-bold text-gray-500 uppercase">Date</th>
-                 <th className="p-5 text-xs font-bold text-gray-500 uppercase">Details</th>
-                 <th className="p-5 text-xs font-bold text-gray-500 uppercase">Status</th>
-                 <th className="p-5 text-xs font-bold text-gray-500 uppercase">Invoice</th>
-                 <th className="p-5 text-xs font-bold text-gray-500 uppercase text-right">Action</th>
-               </tr>
-             </thead>
-             <tbody className="divide-y divide-gray-100">
-               {loading ? (
-                 <tr><td colSpan={5} className="p-12 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-300"/></td></tr>
-               ) : orders.length === 0 ? (
-                  <tr><td colSpan={5} className="p-12 text-center text-gray-400">No orders found.</td></tr>
-               ) : orders.map((order) => {
-                 const yearSuffix = getYearSuffix(order.po_date)
-                 const currency = order.currency?.trim().toUpperCase() || 'MVR'
-                 const amount = Number(order.total_amount || 0)
-                 
-                 const displayWeight = currency === 'USD' 
-                     ? (amount / 11).toFixed(1) 
-                     : Number(order.weight_kg || 0).toFixed(0)
+         {loading ? (
+             <div className="p-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-300"/></div>
+         ) : orders.length === 0 ? (
+             <div className="p-20 text-center text-gray-400">No orders found.</div>
+         ) : (
+             <>
+               {/* --- MOBILE CARD VIEW --- */}
+               <div className="block md:hidden divide-y divide-gray-100">
+                  {orders.map((order) => {
+                     const yearSuffix = getYearSuffix(order.po_date)
+                     const currency = order.currency?.trim().toUpperCase() || 'MVR'
+                     const amount = Number(order.total_amount || 0)
+                     const displayWeight = currency === 'USD' ? (amount / 11).toFixed(1) : Number(order.weight_kg || 0).toFixed(0)
 
-                 return (
-                 <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                   <td className="p-5 text-sm font-medium text-gray-500 w-32">
-                      {order.po_date || order.delivery_date}
-                   </td>
-                   <td className="p-5">
-                     <div className="font-bold text-gray-900 text-lg">PO #{order.po_number}</div>
-                     <div className="text-xs text-gray-500 font-bold mt-1 bg-gray-100 inline-block px-2 py-0.5 rounded">
-                       {currency} {amount.toLocaleString()} • <span className="text-black">{displayWeight} kg</span>
-                     </div>
-                   </td>
-                   <td className="p-5">
-                     {order.delivery_status === 'Delivered' ? (
-                       <div className="flex items-center gap-3">
-                         <CheckCircle2 className="w-5 h-5 text-green-500"/>
-                         <div>
-                           <span className="block text-xs font-bold text-green-700 uppercase">Delivered</span>
-                           {(order.delivery_note || order.delivery_note_number) && (
-                              <span className="block text-[10px] font-mono text-gray-400">
-                                  DN: {String(order.delivery_note || order.delivery_note_number).padStart(2,'0')}/{yearSuffix}
-                              </span>
+                     return (
+                       <div key={order.id} className="p-5 flex flex-col gap-4">
+                          <div className="flex justify-between items-start">
+                             <div>
+                                <span className="text-[10px] font-bold text-gray-400 uppercase block mb-0.5">PO Number</span>
+                                <span className="font-bold text-gray-900 text-lg">#{order.po_number}</span>
+                             </div>
+                             <div className="text-right">
+                                {/* FIX: Replaced Date Label with 'Delivery' and mapped to delivery_date */}
+                                <span className="text-[10px] font-bold text-gray-400 uppercase block mb-0.5">Delivery</span>
+                                <span className="text-sm font-medium text-gray-600">{order.delivery_date || 'Pending'}</span>
+                             </div>
+                          </div>
+
+                          <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
+                             <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold text-gray-900">{currency} {amount.toLocaleString()}</span>
+                             </div>
+                             <div className="text-xs font-bold text-gray-500">{displayWeight} kg</div>
+                          </div>
+
+                          <div className="flex flex-col gap-3">
+                             {order.delivery_status === 'Delivered' ? (
+                                <div className="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-2 rounded-lg border border-green-100">
+                                   <CheckCircle2 className="w-4 h-4"/>
+                                   <div className="flex flex-col">
+                                      <span className="text-xs font-bold uppercase">Delivered</span>
+                                      {(order.delivery_note || order.delivery_note_number) && (
+                                         <span className="text-[9px] font-mono opacity-70">
+                                            DN: {String(order.delivery_note || order.delivery_note_number).padStart(2,'0')}/{yearSuffix}
+                                         </span>
+                                      )}
+                                   </div>
+                                </div>
+                             ) : (
+                                <button onClick={() => markDelivered(order)} className="flex items-center justify-center gap-2 text-gray-600 bg-white border border-gray-200 hover:bg-black hover:text-white px-3 py-2 rounded-lg text-xs font-bold transition-all">
+                                   <Package className="w-4 h-4"/> Mark Delivered
+                                </button>
+                             )}
+
+                             <button onClick={() => togglePayment(order)} className={`w-full py-3 rounded-lg text-xs font-bold border transition-all ${order.payment_status === 'Paid' ? 'bg-black text-white border-black' : 'bg-white text-gray-500 hover:text-red-500 hover:border-red-500'}`}>
+                                {order.payment_status === 'Paid' ? 'PAID' : 'MARK PAID'}
+                             </button>
+                          </div>
+                       </div>
+                     )
+                  })}
+               </div>
+
+               {/* --- DESKTOP TABLE VIEW --- */}
+               <div className="hidden md:block overflow-x-auto">
+                 <table className="w-full text-left whitespace-nowrap">
+                   <thead className="bg-gray-50 border-b border-gray-100">
+                     <tr>
+                       {/* FIX: Changed Header to 'Delivery Date' */}
+                       <th className="p-5 text-xs font-bold text-gray-500 uppercase">Delivery Date</th>
+                       <th className="p-5 text-xs font-bold text-gray-500 uppercase">Details</th>
+                       <th className="p-5 text-xs font-bold text-gray-500 uppercase">Status</th>
+                       <th className="p-5 text-xs font-bold text-gray-500 uppercase">Invoice</th>
+                       <th className="p-5 text-xs font-bold text-gray-500 uppercase text-right">Action</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-gray-100">
+                     {orders.map((order) => {
+                       const yearSuffix = getYearSuffix(order.po_date)
+                       const currency = order.currency?.trim().toUpperCase() || 'MVR'
+                       const amount = Number(order.total_amount || 0)
+                       const displayWeight = currency === 'USD' ? (amount / 11).toFixed(1) : Number(order.weight_kg || 0).toFixed(0)
+
+                       return (
+                       <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                         {/* FIX: Mapped to delivery_date */}
+                         <td className="p-5 text-sm font-medium text-gray-500 w-32">
+                            {order.delivery_date || <span className="text-gray-300 italic">Pending</span>}
+                         </td>
+                         <td className="p-5">
+                           <div className="font-bold text-gray-900 text-lg">PO #{order.po_number}</div>
+                           <div className="text-xs text-gray-500 font-bold mt-1 bg-gray-100 inline-block px-2 py-0.5 rounded">
+                             {currency} {amount.toLocaleString()} • <span className="text-black">{displayWeight} kg</span>
+                           </div>
+                         </td>
+                         <td className="p-5">
+                           {order.delivery_status === 'Delivered' ? (
+                             <div className="flex items-center gap-3">
+                               <CheckCircle2 className="w-5 h-5 text-green-500"/>
+                               <div>
+                                 <span className="block text-xs font-bold text-green-700 uppercase">Delivered</span>
+                                 {(order.delivery_note || order.delivery_note_number) && (
+                                    <span className="block text-[10px] font-mono text-gray-400">
+                                        DN: {String(order.delivery_note || order.delivery_note_number).padStart(2,'0')}/{yearSuffix}
+                                    </span>
+                                 )}
+                               </div>
+                             </div>
+                           ) : (
+                             <button onClick={() => markDelivered(order)} className="flex items-center gap-2 text-gray-600 bg-white border border-gray-200 hover:bg-black hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold">
+                               <Package className="w-4 h-4"/> Mark Delivered
+                             </button>
                            )}
-                         </div>
-                       </div>
-                     ) : (
-                       <button onClick={() => markDelivered(order)} className="flex items-center gap-2 text-gray-600 bg-white border border-gray-200 hover:bg-black hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold">
-                         <Package className="w-4 h-4"/> Mark Delivered
-                       </button>
-                     )}
-                   </td>
-                   <td className="p-5">
-                     {order.invoice_number ? (
-                       <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-blue-600"/>
-                          <span className="text-sm font-bold font-mono text-blue-600">
-                              #{String(order.invoice_number).padStart(4,'0')}/{yearSuffix}
-                          </span>
-                       </div>
-                     ) : (
-                       <span className="text-xs font-bold text-gray-300">--</span>
-                   )}
-                   </td>
-                   <td className="p-5 text-right">
-                     <button 
-                       onClick={() => togglePayment(order)}
-                       className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${
-                         order.payment_status === 'Paid' 
-                         ? 'bg-black text-white border-black' 
-                         : 'bg-white text-gray-500 hover:text-red-500 hover:border-red-500'
-                       }`}
-                     >
-                       {order.payment_status === 'Paid' ? 'PAID' : 'MARK PAID'}
-                     </button>
-                   </td>
-                 </tr>
-                 )
-               })}
-             </tbody>
-           </table>
-         </div>
+                         </td>
+                         <td className="p-5">
+                           {order.invoice_number ? (
+                             <div className="flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-blue-600"/>
+                                <span className="text-sm font-bold font-mono text-blue-600">
+                                    #{String(order.invoice_number).padStart(4,'0')}/{yearSuffix}
+                                </span>
+                             </div>
+                           ) : <span className="text-xs font-bold text-gray-300">--</span>}
+                         </td>
+                         <td className="p-5 text-right">
+                           <button onClick={() => togglePayment(order)} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${order.payment_status === 'Paid' ? 'bg-black text-white border-black' : 'bg-white text-gray-500 hover:text-red-500 hover:border-red-500'}`}>
+                             {order.payment_status === 'Paid' ? 'PAID' : 'MARK PAID'}
+                           </button>
+                         </td>
+                       </tr>
+                       )
+                     })}
+                   </tbody>
+                 </table>
+               </div>
+             </>
+         )}
       </div>
 
       <AlertDialog 
