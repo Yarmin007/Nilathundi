@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-// @ts-ignore: next-pwa might not have types, this prevents build errors
+// @ts-ignore: next-pwa types workaround
 const withPWA = require("next-pwa")({
   dest: "public",
   register: true,
@@ -8,14 +8,9 @@ const withPWA = require("next-pwa")({
   disable: process.env.NODE_ENV === "development",
 });
 
-// Removed ": NextConfig" type annotation to avoid TypeScript errors with experimental features
-const nextConfig = {
-  experimental: {
-    reactCompiler: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+const nextConfig: NextConfig = {
+  // Moved to root based on Next.js 16 error logs
+  reactCompiler: true,
 };
 
 export default withPWA(nextConfig);
