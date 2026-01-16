@@ -25,31 +25,37 @@ export default function DeliveryNoteView() {
     setOrder(data)
   }
 
-  // --- MOBILE PDF FIX (STRICT A4) ---
+  // --- MOBILE PDF FIX (STRICT A4 & NO EXTRA PAGES) ---
   const printStyles = `
     @page { size: A4 portrait; margin: 0; }
     @media print {
       html, body {
-        min-width: 210mm !important; 
-        width: 210mm !important;
-        height: 297mm !important;
+        width: 100% !important;
+        height: 100% !important;
         margin: 0 !important; 
         padding: 0 !important; 
         background: white; 
-        -webkit-print-color-adjust: exact; 
         overflow: hidden !important;
       }
       nav, .no-print { display: none !important; }
+      
       #dn-container { 
-        width: 100% !important; 
-        height: 100% !important; 
         position: absolute; 
         top: 0; 
         left: 0; 
+        width: 100% !important; 
+        /* Allow height to scale automatically to avoid pushing to page 2 */
+        height: auto !important; 
         margin: 0 !important; 
         border: none !important; 
-        overflow: hidden !important; 
-        transform: none !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+      }
+      
+      svg {
+        width: 100% !important;
+        height: auto !important;
+        display: block;
       }
     }
   `
