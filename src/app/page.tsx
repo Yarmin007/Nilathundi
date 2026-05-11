@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { Loader2, DollarSign, Package, CheckCircle2, AlertCircle, FileText, Scale, Filter } from 'lucide-react'
+import { Loader2, DollarSign, Package, CheckCircle2, AlertCircle, FileText, Scale, Filter, Edit, Trash2 } from 'lucide-react'
 import AlertDialog from '@/components/AlertDialog'
 
 export const dynamic = 'force-dynamic'
@@ -40,8 +40,6 @@ export default function Dashboard() {
     let query = supabase
       .from('orders')
       .select('*')
-      .order('po_date', { ascending: false })
-      .order('invoice_number', { ascending: false })
 
     if (year !== 'all') {
       if (month !== 'all') {
@@ -55,9 +53,28 @@ export default function Dashboard() {
     const { data, error } = await query
     if (error) console.error('Error fetching:', error)
     
-    const fetchedOrders = data || []
+    let fetchedOrders = data || []
+
+    // --- SMART CHRONOLOGICAL SORTING ---
+    fetchedOrders.sort((a, b) => {
+      // 1. Delivery Date (Newer on top)
+      const dateA = a.delivery_date ? new Date(a.delivery_date).getTime() : 0;
+      const dateB = b.delivery_date ? new Date(b.delivery_date).getTime() : 0;
+      
+      if (dateA !== dateB) {
+        return dateB - dateA; // Descending
+      }
+      
+      // 2. PO Number (Higher on top)
+      // Uses numeric localeCompare to correctly handle numbers inside strings (e.g. "B202603-02994")
+      const poA = String(a.po_number || '');
+      const poB = String(b.po_number || '');
+      return poB.localeCompare(poA, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
     setOrders(fetchedOrders)
 
+    // Calculate Stats
     let pendingMVR = 0, pendingUSD = 0, earnedMVR = 0, earnedUSD = 0, totalKg = 0
 
     fetchedOrders.forEach(order => {
@@ -108,12 +125,18 @@ export default function Dashboard() {
 
     await supabase.from('orders').update({
       delivery_status: 'Delivered',
-      delivery_note: nextId, 
-      delivery_date: new Date().toISOString().split('T')[0] 
+      delivery_note: nextId
     }).eq('id', order.id)
 
     await supabase.rpc('increment_counter', { row_key: 'next_delivery_note' })
     fetchDashboardData()
+  }
+
+  const deleteOrder = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this order? This action cannot be undone.")) {
+      await supabase.from('orders').delete().eq('id', id)
+      fetchDashboardData()
+    }
   }
 
   return (
@@ -165,12 +188,11 @@ export default function Dashboard() {
           <div className="text-2xl md:text-3xl font-extrabold text-gray-900">${stats.pendingUSD.toLocaleString()}</div>
         </div>
 
-        {/* Earned MVR (FIX: Replaced Dollar Sign with MVR SVG) */}
+        {/* Earned MVR */}
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-row md:flex-col justify-between items-center md:items-start">
           <div className="flex items-center gap-2 text-green-600 font-bold text-xs uppercase">
-             {/* MVR SVG SYMBOL */}
              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 595.3 841.9" className="w-4 h-4 fill-current">
-                <path d="M430.2,283c-.1-.1-.2-.2-.3-.3-.5-.4-.7-1-.5-1.6.2-.6.7-1,1.3-1,.6,0,1.2.2,1.8.4.2,0,.4.1.6.2.3.2.6.1.9-.1.3-.3.6-.5,1-.8,0,0-.2-.1-.2-.2-.4-.2-.6-.6-.7-1.1-.1-1.2.6-1.9,1.8-1.7.6.1,1.1.3,1.7.5.3,0,.5,0,.7,0,1.8-1,3.7-1.9,5.5-2.9,0,0,.1,0,.2,0,.4-.3.8-.3,1.3,0,.4.3.6,1,.5,1.4-.2.4-.6.6-.9.8-1.2.6-2.5,1.2-3.7,1.8,0,0-.2,0-.3.2.2,0,.3.1.4.1.5.2,1.1.4,1.6.7.5.3.8,1.1.6,1.8-.2.5-.7.9-1.4.8-.6,0-1.2-.2-1.8-.4-.7-.2-1.4-.4-2.1-.6-.2,0-.3,0-.5.1-.3.3-.6.5-1,.8.5.2.9.4,1.3.6.7.4,1,.9.9,1.7,0,.7-.6,1.2-1.3,1.2-.4,0-.7,0-1.1-.2-1-.3-2-.6-2.9-.9-.2,0-.3,0-.5,0-1.9,1.2-3.8,2.5-5.7,3.7-1.3.8-2.6,1.5-4,2-.4.1-.8.2-1.1.3-.4,0-.7,0-.9-.3-.8-.7-1-1.5-1-2.5,0-.3.2-.6.6-.6.3,0,.6,0,1,0,.3,0,.5,0,.8,0,.6,0,1.2,0,1.7-.3,1.7-.8,3.3-1.8,4.9-2.8.3-.2.7-.4,1.1-.7"/>
+                <path d="M430.2,283c-.1-.1-.2-.2-.3-.3-.5-.4-.7-1-.5-1.6.2-.6.7-1,1.3-1,.6,0,1.2.2,1.8.4.2,0,.4.1.6.2.3.2.6.1.9-.1.3-.3.6-.5,1-.8,0,0-.2-.1-.2-.4-.2-.6-.6-.7-1.1-.1-1.2.6-1.9,1.8-1.7.6.1,1.1.3,1.7.5.3,0,.5,0,.7,0,1.8-1,3.7-1.9,5.5-2.9,0,0,.1,0,.2,0,.4-.3.8-.3,1.3,0,.4.3.6,1,.5,1.4-.2.4-.6.6-.9.8-1.2.6-2.5,1.2-3.7,1.8,0,0-.2,0-.3.2.2,0,.3.1.4.1.5.2,1.1.4,1.6.7.5.3.8,1.1.6,1.8-.2.5-.7.9-1.4.8-.6,0-1.2-.2-1.8-.4-.7-.2-1.4-.4-2.1-.6-.2,0-.3,0-.5.1-.3.3-.6.5-1,.8.5.2.9.4,1.3.6.7.4,1,.9.9,1.7,0,.7-.6,1.2-1.3,1.2-.4,0-.7,0-1.1-.2-1-.3-2-.6-2.9-.9-.2,0-.3,0-.5,0-1.9,1.2-3.8,2.5-5.7,3.7-1.3.8-2.6,1.5-4,2-.4.1-.8.2-1.1.3-.4,0-.7,0-.9-.3-.8-.7-1-1.5-1-2.5,0-.3.2-.6.6-.6.3,0,.6,0,1,0,.3,0,.5,0,.8,0,.6,0,1.2,0,1.7-.3,1.7-.8,3.3-1.8,4.9-2.8.3-.2.7-.4,1.1-.7"/>
              </svg> 
              Earned (MVR)
           </div>
@@ -217,7 +239,6 @@ export default function Dashboard() {
                                 <span className="font-bold text-gray-900 text-lg">#{order.po_number}</span>
                              </div>
                              <div className="text-right">
-                                {/* FIX: Replaced Date Label with 'Delivery' and mapped to delivery_date */}
                                 <span className="text-[10px] font-bold text-gray-400 uppercase block mb-0.5">Delivery</span>
                                 <span className="text-sm font-medium text-gray-600">{order.delivery_date || 'Pending'}</span>
                              </div>
@@ -252,6 +273,16 @@ export default function Dashboard() {
                              <button onClick={() => togglePayment(order)} className={`w-full py-3 rounded-lg text-xs font-bold border transition-all ${order.payment_status === 'Paid' ? 'bg-black text-white border-black' : 'bg-white text-gray-500 hover:text-red-500 hover:border-red-500'}`}>
                                 {order.payment_status === 'Paid' ? 'PAID' : 'MARK PAID'}
                              </button>
+
+                             {/* Mobile Edit / Delete Controls */}
+                             <div className="flex gap-2 mt-1">
+                                <button onClick={() => window.location.href = `/orders/${order.id}/edit`} className="flex-1 py-2 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-1">
+                                   <Edit className="w-3 h-3"/> Edit
+                                </button>
+                                <button onClick={() => deleteOrder(order.id)} className="flex-1 py-2 rounded-lg text-xs font-bold border border-red-200 text-red-500 hover:bg-red-50 flex items-center justify-center gap-1">
+                                   <Trash2 className="w-3 h-3"/> Delete
+                                </button>
+                             </div>
                           </div>
                        </div>
                      )
@@ -263,7 +294,6 @@ export default function Dashboard() {
                  <table className="w-full text-left whitespace-nowrap">
                    <thead className="bg-gray-50 border-b border-gray-100">
                      <tr>
-                       {/* FIX: Changed Header to 'Delivery Date' */}
                        <th className="p-5 text-xs font-bold text-gray-500 uppercase">Delivery Date</th>
                        <th className="p-5 text-xs font-bold text-gray-500 uppercase">Details</th>
                        <th className="p-5 text-xs font-bold text-gray-500 uppercase">Status</th>
@@ -280,7 +310,6 @@ export default function Dashboard() {
 
                        return (
                        <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                         {/* FIX: Mapped to delivery_date */}
                          <td className="p-5 text-sm font-medium text-gray-500 w-32">
                             {order.delivery_date || <span className="text-gray-300 italic">Pending</span>}
                          </td>
@@ -320,9 +349,17 @@ export default function Dashboard() {
                            ) : <span className="text-xs font-bold text-gray-300">--</span>}
                          </td>
                          <td className="p-5 text-right">
-                           <button onClick={() => togglePayment(order)} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${order.payment_status === 'Paid' ? 'bg-black text-white border-black' : 'bg-white text-gray-500 hover:text-red-500 hover:border-red-500'}`}>
-                             {order.payment_status === 'Paid' ? 'PAID' : 'MARK PAID'}
-                           </button>
+                           <div className="flex justify-end items-center gap-2">
+                             <button onClick={() => window.location.href = `/orders/${order.id}/edit`} title="Edit Order" className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
+                               <Edit className="w-4 h-4" />
+                             </button>
+                             <button onClick={() => deleteOrder(order.id)} title="Delete Order" className="p-2 text-gray-400 hover:text-red-600 transition-colors">
+                               <Trash2 className="w-4 h-4" />
+                             </button>
+                             <button onClick={() => togglePayment(order)} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${order.payment_status === 'Paid' ? 'bg-black text-white border-black' : 'bg-white text-gray-500 hover:text-red-500 hover:border-red-500'}`}>
+                               {order.payment_status === 'Paid' ? 'PAID' : 'MARK PAID'}
+                             </button>
+                           </div>
                          </td>
                        </tr>
                        )
