@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { Loader2, DollarSign, Package, CheckCircle2, AlertCircle, FileText, Scale, Filter, Edit, Trash2 } from 'lucide-react'
+import { Loader2, DollarSign, Package, CheckCircle2, AlertCircle, FileText, Scale, Filter, Edit, Trash2, Search } from 'lucide-react'
 import AlertDialog from '@/components/AlertDialog'
 
 export const dynamic = 'force-dynamic'
@@ -13,6 +13,7 @@ export default function Dashboard() {
   // Filter States
   const [year, setYear] = useState('all') 
   const [month, setMonth] = useState('all') 
+  const [searchPo, setSearchPo] = useState('')
 
   // Statistics
   const [stats, setStats] = useState({
@@ -66,7 +67,6 @@ export default function Dashboard() {
       }
       
       // 2. PO Number (Higher on top)
-      // Uses numeric localeCompare to correctly handle numbers inside strings (e.g. "B202603-02994")
       const poA = String(a.po_number || '');
       const poB = String(b.po_number || '');
       return poB.localeCompare(poA, undefined, { numeric: true, sensitivity: 'base' });
@@ -139,6 +139,12 @@ export default function Dashboard() {
     }
   }
 
+  // Filter orders client-side dynamically based on typed query text
+  const displayedOrders = orders.filter(order => {
+    if (!searchPo.trim()) return true
+    return String(order.po_number || '').toLowerCase().includes(searchPo.toLowerCase())
+  })
+
   return (
     <div className="max-w-7xl mx-auto pb-24 pt-4 md:pt-8 px-4 relative">
       
@@ -156,21 +162,36 @@ export default function Dashboard() {
           </svg>
         </div>
 
-        {/* FILTERS */}
-        <div className="flex w-full md:w-auto justify-between md:justify-start gap-2 bg-white p-1 rounded-xl shadow-sm border border-gray-200">
-           <div className="flex items-center px-3 text-gray-400"><Filter className="w-4 h-4" /></div>
-           <select value={month} onChange={(e) => setMonth(e.target.value)} className="bg-transparent font-bold text-sm p-2 outline-none cursor-pointer text-gray-700 flex-1 md:flex-none">
-             <option value="all">All Months</option>
-             <option disabled>──────────</option>
-             {['01','02','03','04','05','06','07','08','09','10','11','12'].map(m => <option key={m} value={m}>Month {m}</option>)}
-           </select>
-           <div className="w-[1px] bg-gray-200 my-1"></div>
-           <select value={year} onChange={(e) => setYear(e.target.value)} className="bg-transparent font-bold text-sm p-2 outline-none cursor-pointer text-gray-700 flex-1 md:flex-none">
-             <option value="all">All Years</option>
-             <option value="2026">2026</option>
-             <option value="2025">2025</option>
-             <option value="2024">2024</option>
-           </select>
+        {/* CONTROLS BAR: SEARCH & FILTERS */}
+        <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 items-stretch sm:items-center">
+           {/* SEARCH BOX */}
+           <div className="relative flex items-center bg-white border border-gray-200 rounded-xl px-3 py-1 shadow-sm w-full sm:w-60">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 pointer-events-none" />
+              <input 
+                  type="text" 
+                  placeholder="Search PO number..." 
+                  className="w-full bg-transparent p-2 pl-6 text-sm font-bold text-gray-700 outline-none placeholder-gray-400"
+                  value={searchPo}
+                  onChange={(e) => setSearchPo(e.target.value)}
+              />
+           </div>
+
+           {/* DATE FILTERS */}
+           <div className="flex w-full md:w-auto justify-between md:justify-start gap-2 bg-white p-1 rounded-xl shadow-sm border border-gray-200">
+              <div className="flex items-center px-3 text-gray-400"><Filter className="w-4 h-4" /></div>
+              <select value={month} onChange={(e) => setMonth(e.target.value)} className="bg-transparent font-bold text-sm p-2 outline-none cursor-pointer text-gray-700 flex-1 md:flex-none">
+                <option value="all">All Months</option>
+                <option disabled>──────────</option>
+                {['01','02','03','04','05','06','07','08','09','10','11','12'].map(m => <option key={m} value={m}>Month {m}</option>)}
+              </select>
+              <div className="w-[1px] bg-gray-200 my-1"></div>
+              <select value={year} onChange={(e) => setYear(e.target.value)} className="bg-transparent font-bold text-sm p-2 outline-none cursor-pointer text-gray-700 flex-1 md:flex-none">
+                <option value="all">All Years</option>
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+              </select>
+           </div>
         </div>
       </div>
 
@@ -192,7 +213,7 @@ export default function Dashboard() {
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-row md:flex-col justify-between items-center md:items-start">
           <div className="flex items-center gap-2 text-green-600 font-bold text-xs uppercase">
              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 595.3 841.9" className="w-4 h-4 fill-current">
-                <path d="M430.2,283c-.1-.1-.2-.2-.3-.3-.5-.4-.7-1-.5-1.6.2-.6.7-1,1.3-1,.6,0,1.2.2,1.8.4.2,0,.4.1.6.2.3.2.6.1.9-.1.3-.3.6-.5,1-.8,0,0-.2-.1-.2-.4-.2-.6-.6-.7-1.1-.1-1.2.6-1.9,1.8-1.7.6.1,1.1.3,1.7.5.3,0,.5,0,.7,0,1.8-1,3.7-1.9,5.5-2.9,0,0,.1,0,.2,0,.4-.3.8-.3,1.3,0,.4.3.6,1,.5,1.4-.2.4-.6.6-.9.8-1.2.6-2.5,1.2-3.7,1.8,0,0-.2,0-.3.2.2,0,.3.1.4.1.5.2,1.1.4,1.6.7.5.3.8,1.1.6,1.8-.2.5-.7.9-1.4.8-.6,0-1.2-.2-1.8-.4-.7-.2-1.4-.4-2.1-.6-.2,0-.3,0-.5.1-.3.3-.6.5-1,.8.5.2.9.4,1.3.6.7.4,1,.9.9,1.7,0,.7-.6,1.2-1.3,1.2-.4,0-.7,0-1.1-.2-1-.3-2-.6-2.9-.9-.2,0-.3,0-.5,0-1.9,1.2-3.8,2.5-5.7,3.7-1.3.8-2.6,1.5-4,2-.4.1-.8.2-1.1.3-.4,0-.7,0-.9-.3-.8-.7-1-1.5-1-2.5,0-.3.2-.6.6-.6.3,0,.6,0,1,0,.3,0,.5,0,.8,0,.6,0,1.2,0,1.7-.3,1.7-.8,3.3-1.8,4.9-2.8.3-.2.7-.4,1.1-.7"/>
+                <path d="M430.2,283c-.1-.1-.2-.2-.3-.3-.5-.4-.7-1-.5-1.6.2-.6.7-1,1.3-1,.6,0,1.2.2,1.8.4.2,0,.4.1.6.2.3.2.6.1.9-.1.3-.3.6-.5,1-.8,0,0-.2-.1-.2-.4-.2-.6-.6-.7-1.1-.1-1.2.6-1.9,1.8-1.7.6.1,1.1.3,1.7.5.3,0,.5,0,.7,0,1.8-1,3.7-1.9,5.5-2.9,0,0,.1,0,.2,0,.4-.3.8-.3,1.3,0,.4.3.6,1,.5,1.4-.2.4-.6.6-.9.8-1.2.6-2.5,1.2-3.7,1.8,0,0-.2,0-.3.2.2,0,.3.1.4.1.5.2,1.1.4,1.6.7.5.3.8,1.1.6,1.8-.2.5-.7.9-1.4.8-.6,0-1.2-.2-1.8-.4-.7-.2-1.4-.4-2.1-.6-.2,0-.3,0-.5,0-1.9,1.2-3.8,2.5-5.7,3.7-1.3.8-2.6,1.5-4,2-.4.1-.8.2-1.1.3-.4,0-.7,0-.9-.3-.8-.7-1-1.5-1-2.5,0-.3.2-.6.6-.6.3,0,.6,0,1,0,.3,0,.5,0,.8,0,.6,0,1.2,0,1.7-.3,1.7-.8,3.3-1.8,4.9-2.8.3-.2.7-.4,1.1-.7"/>
              </svg> 
              Earned (MVR)
           </div>
@@ -219,13 +240,13 @@ export default function Dashboard() {
          
          {loading ? (
              <div className="p-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-300"/></div>
-         ) : orders.length === 0 ? (
-             <div className="p-20 text-center text-gray-400">No orders found.</div>
+         ) : displayedOrders.length === 0 ? (
+             <div className="p-20 text-center text-gray-400">No orders found matching the filters.</div>
          ) : (
              <>
                {/* --- MOBILE CARD VIEW --- */}
                <div className="block md:hidden divide-y divide-gray-100">
-                  {orders.map((order) => {
+                  {displayedOrders.map((order) => {
                      const yearSuffix = getYearSuffix(order.po_date)
                      const currency = order.currency?.trim().toUpperCase() || 'MVR'
                      const amount = Number(order.total_amount || 0)
@@ -302,7 +323,7 @@ export default function Dashboard() {
                      </tr>
                    </thead>
                    <tbody className="divide-y divide-gray-100">
-                     {orders.map((order) => {
+                     {displayedOrders.map((order) => {
                        const yearSuffix = getYearSuffix(order.po_date)
                        const currency = order.currency?.trim().toUpperCase() || 'MVR'
                        const amount = Number(order.total_amount || 0)

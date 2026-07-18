@@ -18,10 +18,10 @@ export default function StatementsPage() {
   const [showModal, setShowModal] = useState(false)
   const [genLoading, setGenLoading] = useState(false)
   
-  // Dates
-  const [dateRange, setDateRange] = useState({
-    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], // 1st of current month
-    end: new Date().toISOString().split('T')[0] // Today
+  // Dates fallback if selection is empty
+  const [dateRange] = useState({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
   })
   const [docDate, setDocDate] = useState('') 
 
@@ -43,10 +43,10 @@ export default function StatementsPage() {
     fetchStatements()
   }, [selectedYear]) // Re-fetch when filter changes
 
-  // 1. Fetch Orders when Dates Change
+  // 1. Fetch Unassigned Orders when Modal Opens
   useEffect(() => {
-    if(showModal) fetchOrdersInDateRange()
-  }, [dateRange, showModal])
+    if(showModal) fetchUnassignedOrders()
+  }, [showModal])
 
   // 2. Recalculate Total when Selection Changes
   useEffect(() => {
@@ -77,42 +77,42 @@ export default function StatementsPage() {
   }
 
   // --- LOGIC: FETCH & SELECT ---
-  const fetchOrdersInDateRange = async () => {
+  const fetchUnassignedOrders = async () => {
     setLoading(true) 
 
-    // 1. Get New Orders (Candidates for THIS statement)
+    // 1. Get Unassigned Orders (Not yet linked to any statement)
     const { data: newOrders } = await supabase
       .from('orders')
       .select('*')
-      .gte('po_date', dateRange.start)
-      .lte('po_date', dateRange.end)
+      .is('statement_id', null)
       .not('invoice_number', 'is', null) 
       .order('po_date', { ascending: true })
     
     const orders = newOrders || []
     setAvailableOrders(orders)
     
-    // Default: Select ALL found orders
+    // Default: Select ALL found unassigned orders
     const allIds = new Set(orders.map(o => o.id))
     setSelectedOrderIds(allIds)
 
-    // 2. Real Unpaid Debt Calculation
+    // 2. Real Unpaid Debt Calculation (Historical outstanding debt not inside this batch)
     const { data: unpaidDebt } = await supabase
       .from('orders')
       .select('total_amount')
-      .lt('po_date', dateRange.start)
+      .is('statement_id', null)
       .neq('payment_status', 'Paid')
       .not('invoice_number', 'is', null)
 
-    const realDebt = unpaidDebt?.reduce((sum, item) => sum + (item.total_amount || 0), 0) || 0
-    setPrevOutstanding(realDebt)
+    const totalUnassignedDebt = unpaidDebt?.reduce((sum, item) => sum + (Number(item.total_amount) || 0), 0) || 0
+    // Current window outstanding is total unassigned debt minus what we selected in this current batch view
+    const currentSelectedSum = orders.reduce((sum, item) => sum + (Number(item.total_amount) || 0), 0)
+    setPrevOutstanding(Math.max(0, totalUnassignedDebt - currentSelectedSum))
 
     // 3. Find Previous Statement Info
     const { data: lastStmt } = await supabase
       .from('statements')
       .select('*')
-      .lt('start_date', dateRange.start) 
-      .order('start_date', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle() 
 
@@ -125,7 +125,7 @@ export default function StatementsPage() {
   const calculateSelectedTotal = () => {
     const total = availableOrders
         .filter(o => selectedOrderIds.has(o.id))
-        .reduce((sum, item) => sum + (item.total_amount || 0), 0)
+        .reduce((sum, item) => sum + (Number(item.total_amount) || 0), 0)
     setPreviewNewTotal(total)
   }
 
@@ -136,6 +136,11 @@ export default function StatementsPage() {
   }
 
   const generateStatement = async () => {
+    if (selectedOrderIds.size === 0) {
+      alert('Please select at least one invoice to include in this statement.')
+      return
+    }
+
     setGenLoading(true)
     
     // 1. Get Next Number
@@ -151,7 +156,6 @@ export default function StatementsPage() {
         .from('statements')
         .select('id')
         .eq('statement_number', nextNum)
-        // We check loosely by year range to prevent duplicates like #1/26 existing twice
         .gte('created_at', `${targetYear}-01-01`)
         .lte('created_at', `${targetYear}-12-31`)
         .maybeSingle()
@@ -162,26 +166,38 @@ export default function StatementsPage() {
         return
     }
 
+    // Determine statement duration bound dynamically from selected invoices
+    const selectedOrdersData = availableOrders.filter(o => selectedOrderIds.has(o.id))
+    const startDates = selectedOrdersData.map(o => o.po_date).filter(Boolean).sort()
+    const finalStartDate = startDates[0] || dateRange.start
+    const finalEndDate = startDates[startDates.length - 1] || dateRange.end
+
     // 3. Create Statement if Safe
     const finalTotal = previewNewTotal + prevOutstanding
 
-    const { error } = await supabase.from('statements').insert([{
+    const { data: newStatement, error } = await supabase.from('statements').insert([{
       statement_number: nextNum,
-      start_date: dateRange.start,
-      end_date: dateRange.end,
+      start_date: finalStartDate,
+      end_date: finalEndDate,
       total_amount: finalTotal,
       previous_balance: prevOutstanding, 
       previous_statement_number: lastStmtInfo ? String(lastStmtInfo.statement_number) : null,
       created_at: creationTimestamp 
-    }])
+    }]).select().single()
 
-    if (!error) {
+    if (!error && newStatement) {
+      // Tie the exact checked invoices to this statement unique ID
+      await supabase
+        .from('orders')
+        .update({ statement_id: newStatement.id })
+        .in('id', Array.from(selectedOrderIds))
+
       await supabase.rpc('increment_counter', { row_key: 'next_statement_number' })
       setShowModal(false)
       fetchStatements()
       setDocDate('')
     } else {
-      alert('Error: ' + error.message)
+      alert('Error: ' + (error?.message || 'Failed to create statement header'))
     }
     setGenLoading(false)
   }
@@ -252,7 +268,7 @@ export default function StatementsPage() {
           </div>
         ) : (
           <>
-            {/* --- MOBILE CARD VIEW (New) --- */}
+            {/* --- MOBILE CARD VIEW --- */}
             <div className="block md:hidden divide-y divide-gray-100">
                 {statements.map((stmt) => (
                     <div key={stmt.id} className="p-5 flex flex-col gap-3 relative">
@@ -264,13 +280,13 @@ export default function StatementsPage() {
                                 #{String(stmt.statement_number).padStart(4, '0')}/{new Date(stmt.created_at).getFullYear().toString().slice(-2)}
                             </span>
                             <span className="font-extrabold text-gray-900 text-lg">
-                                {stmt.total_amount?.toLocaleString()} <span className="text-xs font-medium text-gray-400">MVR</span>
+                                {Number(stmt.total_amount)?.toLocaleString()} <span className="text-xs font-medium text-gray-400">MVR</span>
                             </span>
                         </div>
 
                         <div className="flex items-center gap-2 text-xs text-gray-500 font-medium bg-gray-50 p-2 rounded-lg w-fit relative z-10 pointer-events-none">
                             <Calendar className="w-3 h-3"/>
-                            {new Date(stmt.start_date).toLocaleDateString('en-GB')} ➜ {new Date(stmt.end_date).toLocaleDateString('en-GB')}
+                            {stmt.start_date ? new Date(stmt.start_date).toLocaleDateString('en-GB') : '-'} ➜ {stmt.end_date ? new Date(stmt.end_date).toLocaleDateString('en-GB') : '-'}
                         </div>
 
                         <div className="flex justify-between items-center mt-1 relative z-20">
@@ -313,10 +329,10 @@ export default function StatementsPage() {
                         <div className="text-xs text-gray-400 mt-1">Generated: {new Date(stmt.created_at).toLocaleDateString('en-GB')}</div>
                       </td>
                       <td className="p-5 text-sm font-medium text-gray-600">
-                        {new Date(stmt.start_date).toLocaleDateString('en-GB')} <span className="text-gray-300 mx-1">➜</span> {new Date(stmt.end_date).toLocaleDateString('en-GB')}
+                        {stmt.start_date ? new Date(stmt.start_date).toLocaleDateString('en-GB') : '-'} <span className="text-gray-300 mx-1">➜</span> {stmt.end_date ? new Date(stmt.end_date).toLocaleDateString('en-GB') : '-'}
                       </td>
                       <td className="p-5 text-sm font-bold text-gray-900">
-                        {stmt.total_amount?.toLocaleString()} MVR
+                        {Number(stmt.total_amount)?.toLocaleString()} MVR
                       </td>
                       <td className="p-5 text-right flex justify-end gap-2">
                         <Link href={`/statements/${stmt.id}`} className="text-gray-500 hover:text-black hover:bg-gray-100 p-2.5 rounded-lg transition-all border border-transparent hover:border-gray-200" title="View">
@@ -345,18 +361,6 @@ export default function StatementsPage() {
                 </div>
 
                 <div className="space-y-4 mb-4 flex-shrink-0">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Start Date</label>
-                            <input type="date" className="w-full bg-white border border-gray-200 rounded-lg p-3 text-base md:text-sm font-bold"
-                                value={dateRange.start} onChange={e => setDateRange({...dateRange, start: e.target.value})} />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">End Date</label>
-                            <input type="date" className="w-full bg-white border border-gray-200 rounded-lg p-3 text-base md:text-sm font-bold"
-                                value={dateRange.end} onChange={e => setDateRange({...dateRange, end: e.target.value})} />
-                        </div>
-                    </div>
                     <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Date on Paper (Optional)</label>
                         <input type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-base md:text-sm font-bold"
@@ -367,12 +371,12 @@ export default function StatementsPage() {
                 {/* --- SELECTION LIST --- */}
                 <div className="flex-1 overflow-hidden flex flex-col bg-gray-50 rounded-xl border border-gray-100 mb-4">
                     <div className="p-3 bg-gray-100 border-b border-gray-200 flex justify-between items-center">
-                        <span className="text-xs font-bold text-gray-500 uppercase">Select Invoices</span>
+                        <span className="text-xs font-bold text-gray-500 uppercase">Select Unassigned Invoices</span>
                         <span className="text-xs bg-white px-2 py-0.5 rounded font-bold">{selectedOrderIds.size} / {availableOrders.length}</span>
                     </div>
                     <div className="overflow-y-auto p-2 space-y-1">
                         {availableOrders.length === 0 ? (
-                            <div className="p-6 text-center text-xs text-gray-400">No invoices found in this range.</div>
+                            <div className="p-6 text-center text-xs text-gray-400">All available invoices have already been assigned to statements!</div>
                         ) : availableOrders.map(order => {
                             const isSelected = selectedOrderIds.has(order.id)
                             return (
@@ -391,14 +395,14 @@ export default function StatementsPage() {
                                     <div className="flex-1">
                                         <div className="flex justify-between items-center">
                                             <span className={`text-sm font-bold ${isSelected ? 'text-gray-900' : 'text-gray-500'}`}>
-                                                Inv #{String(order.invoice_number).padStart(4,'0')}
+                                                Inv #{String(order.invoice_number || '').padStart(4,'0')}
                                             </span>
                                             <span className={`text-sm font-mono font-bold ${isSelected ? 'text-black' : 'text-gray-400'}`}>
-                                                {order.total_amount?.toLocaleString()}
+                                                {Number(order.total_amount || 0).toLocaleString()}
                                             </span>
                                         </div>
                                         <div className="text-[10px] text-gray-400 mt-0.5">
-                                            {order.po_date} • PO: {order.po_number}
+                                            {order.po_date || 'No Date'} • PO: {order.po_number || '-'}
                                         </div>
                                     </div>
                                 </div>

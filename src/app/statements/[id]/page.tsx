@@ -27,13 +27,28 @@ export default function StatementView() {
     }
     setStatement(stmt)
 
-    const { data: ords } = await supabase
+    // 1. Try fetching by the new statement_id link first
+    let { data: ords } = await supabase
       .from('orders')
       .select('*')
-      .gte('po_date', stmt.start_date)
-      .lte('po_date', stmt.end_date)
+      .eq('statement_id', id)
       .not('invoice_number', 'is', null)
       .order('po_date', { ascending: true })
+    
+    // 2. Fallback: If no linked orders found, this is a historic statement.
+    // Filter by date range, but ONLY include orders created BEFORE or AT THE SAME TIME as this statement.
+    if (!ords || ords.length === 0) {
+      const { data: historicOrds } = await supabase
+        .from('orders')
+        .select('*')
+        .gte('po_date', stmt.start_date)
+        .lte('po_date', stmt.end_date)
+        .lte('created_at', stmt.created_at) // <--- Safety shield: blocks invoices made after the statement existed
+        .not('invoice_number', 'is', null)
+        .order('po_date', { ascending: true })
+      
+      ords = historicOrds || []
+    }
     
     setOrders(ords || [])
     setLoading(false)
@@ -96,8 +111,8 @@ export default function StatementView() {
   let currentRowIndex = 0
 
   // 1. Previous Balance
-  if (statement.previous_balance && statement.previous_balance > 0) {
-      runningBalance += statement.previous_balance
+  if (statement.previous_balance && Number(statement.previous_balance) > 0) {
+      runningBalance += Number(statement.previous_balance)
       
       const prevYear = getYearSuffix(statement.start_date)
       const prevDesc = statement.previous_statement_number 
@@ -108,7 +123,7 @@ export default function StatementView() {
           id: 'prev-bal',
           type: 'opening',
           desc: prevDesc,
-          amount: statement.previous_balance,
+          amount: Number(statement.previous_balance),
           balance: runningBalance,
           yText: START_Y + (currentRowIndex * ROW_HEIGHT),
           yRect: RECT_START_Y + (currentRowIndex * ROW_HEIGHT),
@@ -119,7 +134,7 @@ export default function StatementView() {
 
   // 2. Order Rows
   orders.forEach((order) => {
-    runningBalance += order.total_amount
+    runningBalance += Number(order.total_amount || 0)
     rows.push({
       ...order,
       type: 'order',
@@ -137,7 +152,6 @@ export default function StatementView() {
   const stmtDate = new Date(statement.created_at).toLocaleDateString('en-GB')
 
   return (
-    // MOBILE FIX: p-4 instead of p-8
     <div className="min-h-screen bg-gray-100 p-4 md:p-8 flex flex-col items-center print:bg-white print:p-0 print:block">
       <style>{printStyles}</style>
       
@@ -154,8 +168,7 @@ export default function StatementView() {
         </button>
       </div>
 
-      {/* SVG CONTAINER: Responsive Logic */}
-      {/* w-full fits mobile, md:w-[210mm] locks to A4 width on PC, aspect-[210/297] keeps A4 shape */}
+      {/* SVG CONTAINER */}
       <div 
         id="statement-container"
         className="bg-white shadow-2xl overflow-hidden relative mx-auto print:shadow-none w-full md:w-[210mm] aspect-[210/297]" 
@@ -219,7 +232,7 @@ export default function StatementView() {
           
           {/* MVR Logo */}
           <g transform="translate(-40, 0)"> 
-             <path fill="#ffffff" d="M430.2,283c-.1-.1-.2-.2-.3-.3-.5-.4-.7-1-.5-1.6.2-.6.7-1,1.3-1,.6,0,1.2.2,1.8.4.2,0,.4.1.6.2.3.2.6.1.9-.1.3-.3.6-.5,1-.8,0,0-.2-.1-.2-.2-.4-.2-.6-.6-.7-1.1-.1-1.2.6-1.9,1.8-1.7.6.1,1.1.3,1.7.5.3,0,.5,0,.7,0,1.8-1,3.7-1.9,5.5-2.9,0,0,.1,0,.2,0,.4-.3.8-.3,1.3,0,.4.3.6,1,.5,1.4-.2.4-.6.6-.9.8-1.2.6-2.5,1.2-3.7,1.8,0,0-.2,0-.3.2.2,0,.3.1.4.1.5.2,1.1.4,1.6.7.5.3.8,1.1.6,1.8-.2.5-.7.9-1.4.8-.6,0-1.2-.2-1.8-.4-.7-.2-1.4-.4-2.1-.6-.2,0-.3,0-.5.1-.3.3-.6.5-1,.8.5.2.9.4,1.3.6.7.4,1,.9.9,1.7,0,.7-.6,1.2-1.3,1.2-.4,0-.7,0-1.1-.2-1-.3-2-.6-2.9-.9-.2,0-.3,0-.5,0-1.9,1.2-3.8,2.5-5.7,3.7-1.3.8-2.6,1.5-4,2-.4.1-.8.2-1.1.3-.4,0-.7,0-.9-.3-.8-.7-1-1.5-1-2.5,0-.3.2-.6.6-.6.3,0,.6,0,1,0,.3,0,.5,0,.8,0,.6,0,1.2,0,1.7-.3,1.7-.8,3.3-1.8,4.9-2.8.3-.2.7-.4,1.1-.7"/>
+             <path fill="#ffffff" d="M430.2,283c-.1-.1-.2-.2-.3-.3-.5-.4-.7-1-.5-1.6.2-.6.7-1,1.3-1,.6,0,1.2.2,1.8.4.2,0,.4.1.6.2.3.2.6.1.9-.1.3-.3.6-.5,1-.8,0,0-.2-.1-.2-.2-.4-.2-.6-.6-.7-1.1-.1-1.2.6-1.9,1.8-1.7.6.1,1.1.3,1.7.5.3,0,.5,0,.7,0,1.8-1,3.7-1.9,5.5-2.9,0,0,.1,0,.2,0,.4-.3.8-.3,1.3,0,.4.3.6,1,.5,1.4-.2.4-.6.6-.9.8-1.2.6-2.5,1.2-3.7,1.8,0,0-.2,0-.3.2.2,0,.3.1.4.1.5.2,1.1.4,1.6.7.5.3.8,1.1.6,1.8-.2.5-.7.9-1.4.8-.6,0-1.2-.2-1.8-.4-.7-.2-1.4-.4-2.1-.6-.2,0-.3,0-.5,0-1.9,1.2-3.8,2.5-5.7,3.7-1.3.8-2.6,1.5-4,2-.4.1-.8.2-1.1.3-.4,0-.7,0-.9-.3-.8-.7-1-1.5-1-2.5,0-.3.2-.6.6-.6.3,0,.6,0,1,0,.3,0,.5,0,.8,0,.6,0,1.2,0,1.7-.3,1.7-.8,3.3-1.8,4.9-2.8.3-.2.7-.4,1.1-.7"/>
           </g>
           <text className="st14" transform="translate(415 292.8)">{totalDue}</text>
 
@@ -240,13 +253,13 @@ export default function StatementView() {
                   return (
                     <g key={row.id}>
                         <text className="st3" x="30" y={row.yText} textAnchor="start">{row.desc}</text>
-                        <text className="st3" x="415" y={row.yText} textAnchor="end">{row.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</text>
+                        <text className="st3" x="415" y={row.yText} textAnchor="end">{Number(row.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</text>
                         <text className="st3" x="500" y={row.yText} textAnchor="end">0.00</text>
-                        <text className="st3" x="585" y={row.yText} textAnchor="end">{row.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</text>
+                        <text className="st3" x="585" y={row.yText} textAnchor="end">{Number(row.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</text>
                     </g>
                   )
               }
-              const dateStr = new Date(row.po_date).toLocaleDateString('en-GB')
+              const dateStr = row.po_date ? new Date(row.po_date).toLocaleDateString('en-GB') : '-'
               const invSuffix = getYearSuffix(row.po_date)
               const invNum = row.invoice_number ? String(row.invoice_number).padStart(4,'0') + '/' + invSuffix : 'PENDING'
               return (
@@ -254,9 +267,9 @@ export default function StatementView() {
                   <text className="st3" x="30"  y={row.yText} textAnchor="start">{dateStr}</text>
                   <text className="st3" x="155" y={row.yText} textAnchor="middle">{invNum}</text>
                   <text className="st3" x="255" y={row.yText} textAnchor="middle">{row.po_number || '-'}</text>
-                  <text className="st3" x="415" y={row.yText} textAnchor="end">{row.total_amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</text>
+                  <text className="st3" x="415" y={row.yText} textAnchor="end">{Number(row.total_amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</text>
                   <text className="st3" x="500" y={row.yText} textAnchor="end">0.00</text>
-                  <text className="st3" x="585" y={row.yText} textAnchor="end">{row.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</text>
+                  <text className="st3" x="585" y={row.yText} textAnchor="end">{Number(row.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</text>
                 </g>
               )
             })}
@@ -281,4 +294,4 @@ export default function StatementView() {
       </div>
     </div>
   )
-}   
+}
