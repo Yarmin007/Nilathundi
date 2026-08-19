@@ -8,11 +8,16 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Dhivehi Havaadhu',
   description: 'Spice Management System',
-  manifest: '/manifest.json', // PWA Manifest
+  // Removed hardcoded manifest.json so Next.js auto-detects app/manifest.ts correctly
   icons: {
-    icon: '/icon-192.png',       // Favicon for browser tabs (using the PNG)
+    icon: '/icon-192.png',        // Favicon for browser tabs (using the PNG)
     shortcut: '/icon-192.png',   // Shortcut icon
     apple: '/icon-192.png',      // Apple Touch Icon for iOS Home Screen
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'Nila Thundi',
+    statusBarStyle: 'black-translucent',
   },
 }
 
