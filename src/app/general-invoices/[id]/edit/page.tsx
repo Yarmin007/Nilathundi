@@ -11,11 +11,15 @@ export default function EditGeneralInvoice() {
   const [saving, setSaving] = useState(false)
   
   // Invoice Data
+  const [company, setCompany] = useState('Nila Thundi')
   const [invoiceNum, setInvoiceNum] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [customerAddress, setCustomerAddress] = useState('')
+  const [customerEmail, setCustomerEmail] = useState('')
+  const [customerPhone, setCustomerPhone] = useState('')
   const [date, setDate] = useState('')
   const [items, setItems] = useState<any[]>([])
+  const [year, setYear] = useState('')
   
   // Contacts for Autocomplete
   const [contacts, setContacts] = useState<any[]>([])
@@ -34,9 +38,13 @@ export default function EditGeneralInvoice() {
     }
     
     // Load Data
-    setInvoiceNum(`NT ${String(data.invoice_number).padStart(2, '0')} / ${data.year}`)
+    setCompany(data.company || 'Nila Thundi')
+    setYear(data.year)
+    setInvoiceNum(data.invoice_number)
     setCustomerName(data.customer_name)
     setCustomerAddress(data.customer_address || '')
+    setCustomerEmail(data.customer_email || '')
+    setCustomerPhone(data.customer_phone || '')
     setDate(data.date)
     setItems(data.items || [])
     setLoading(false)
@@ -51,7 +59,11 @@ export default function EditGeneralInvoice() {
       const val = e.target.value
       setCustomerName(val)
       const match = contacts.find(c => c.name.toLowerCase() === val.toLowerCase())
-      if (match && match.address) setCustomerAddress(match.address)
+      if (match) {
+          if (match.address) setCustomerAddress(match.address)
+          if (match.email && match.email !== '-') setCustomerEmail(match.email)
+          if (match.phone && match.phone !== '-') setCustomerPhone(match.phone)
+      }
   }
 
   const handleItemChange = (i: number, field: string, val: any) => {
@@ -71,9 +83,12 @@ export default function EditGeneralInvoice() {
     const total = items.reduce((sum, item) => sum + (item.quantity * item.price), 0)
 
     const { error } = await supabase.from('general_invoices').update({
+      company: company,
       date: date,
       customer_name: customerName,
       customer_address: customerAddress,
+      customer_email: customerEmail,
+      customer_phone: customerPhone,
       items: items,
       total_amount: total
     }).eq('id', id)
@@ -94,11 +109,20 @@ export default function EditGeneralInvoice() {
 
       <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
         
+        {/* Company Selection */}
+        <div className="flex bg-gray-100 p-1 rounded-xl w-fit border border-gray-200">
+            <button type="button" onClick={() => setCompany('Nila Thundi')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${company === 'Nila Thundi' ? 'bg-black text-white shadow' : 'text-gray-500 hover:text-black'}`}>Nila Thundi</button>
+            <button type="button" onClick={() => setCompany('3S')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${company === '3S' ? 'bg-black text-white shadow' : 'text-gray-500 hover:text-black'}`}>3S</button>
+        </div>
+
         {/* Header */}
         <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                <span className="block text-[10px] font-bold text-gray-400 uppercase">Invoice #</span>
-                <span className="text-lg font-mono font-bold text-gray-700">{invoiceNum}</span>
+            <div className={`flex-1 p-3 rounded-xl border ${company === '3S' ? 'bg-orange-50 border-orange-100' : 'bg-blue-50 border-blue-100'}`}>
+                <span className={`block text-[10px] font-bold uppercase ${company === '3S' ? 'text-orange-400' : 'text-blue-400'}`}>Invoice #</span>
+                <span className={`text-lg font-mono font-bold ${company === '3S' ? 'text-orange-700' : 'text-blue-700'}`}>
+                    {company === '3S' ? '' : 'NT '}
+                    {company === '3S' ? String(invoiceNum).padStart(4, '0') : String(invoiceNum).padStart(2, '0')} / {year}
+                </span>
             </div>
             <div className="flex-1">
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Date</label>
@@ -125,6 +149,22 @@ export default function EditGeneralInvoice() {
                 className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-black text-sm" 
                 placeholder="Address / Notes" 
             />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input 
+                    value={customerEmail} 
+                    onChange={e => setCustomerEmail(e.target.value)} 
+                    className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-black text-sm" 
+                    placeholder="Email Address" 
+                    type="email"
+                />
+                <input 
+                    value={customerPhone} 
+                    onChange={e => setCustomerPhone(e.target.value)} 
+                    className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-black text-sm" 
+                    placeholder="Phone Number" 
+                />
+            </div>
         </div>
 
         <hr className="border-gray-100"/>
