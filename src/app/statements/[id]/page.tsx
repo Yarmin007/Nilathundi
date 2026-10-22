@@ -1,3 +1,5 @@
+// src/app/statements/[id]/page.tsx
+
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
@@ -26,6 +28,13 @@ export default function StatementView() {
         return
     }
     setStatement(stmt)
+
+    // If the statement is locked and has a snapshot, use it directly to guarantee it never changes
+    if (stmt.is_locked && stmt.snapshot && stmt.snapshot.orders) {
+      setOrders(stmt.snapshot.orders)
+      setLoading(false)
+      return
+    }
 
     // 1. Try fetching by the new statement_id link first
     let { data: ords } = await supabase
